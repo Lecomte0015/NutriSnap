@@ -7,6 +7,9 @@ export interface User {
 export interface Profile {
   id?: string;
   user_id: string;
+  first_name?: string;
+  last_name?: string;
+  photo_base64?: string;
   age: number;
   weight: number;
   height: number;

@@ -25,7 +25,7 @@ import i18n from '../src/i18n';
 
 const { width } = Dimensions.get('window');
 
-const STEPS = ['welcome', 'age', 'weight', 'height', 'goal', 'language'];
+const STEPS = ['welcome', 'name', 'age', 'weight', 'height', 'goal', 'language'];
 
 type Goal = 'lose_weight' | 'maintain' | 'gain_muscle';
 type Language = 'fr' | 'de' | 'it';
@@ -37,6 +37,7 @@ export default function OnboardingScreen() {
   const [loading, setLoading] = useState(false);
   
   // Form data
+  const [firstName, setFirstName] = useState('');
   const [age, setAge] = useState('');
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
@@ -76,7 +77,7 @@ export default function OnboardingScreen() {
       return;
     }
 
-    if (!age || !weight || !height) {
+    if (!firstName.trim() || !age || !weight || !height) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs');
       return;
     }
@@ -90,6 +91,7 @@ export default function OnboardingScreen() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             user_id: user.id,
+            first_name: firstName.trim(),
             age: parseInt(age),
             weight: parseFloat(weight),
             height: parseFloat(height),
@@ -126,6 +128,23 @@ export default function OnboardingScreen() {
             <Mascot mood="excited" size={180} />
             <Text style={styles.stepTitle}>{t('onboarding.welcome')}</Text>
             <Text style={styles.stepSubtitle}>{t('onboarding.welcomeSubtitle')}</Text>
+          </View>
+        );
+      
+      case 'name':
+        return (
+          <View style={styles.stepContent}>
+            <Mascot mood="happy" size={140} />
+            <Text style={styles.stepTitle}>Comment vous appelez-vous ?</Text>
+            <TextInput
+              style={styles.textInput}
+              value={firstName}
+              onChangeText={setFirstName}
+              placeholder="Votre prénom"
+              placeholderTextColor={COLORS.textLight}
+              autoFocus
+              autoCapitalize="words"
+            />
           </View>
         );
         
@@ -271,6 +290,7 @@ export default function OnboardingScreen() {
 
   const canProceed = () => {
     switch (STEPS[currentStep]) {
+      case 'name': return firstName.trim().length > 0;
       case 'age': return age.length > 0;
       case 'weight': return weight.length > 0;
       case 'height': return height.length > 0;
@@ -386,6 +406,17 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: COLORS.textSecondary,
     marginLeft: SPACING.sm,
+  },
+  textInput: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    textAlign: 'center',
+    width: '100%',
+    borderBottomWidth: 3,
+    borderBottomColor: COLORS.secondary,
+    paddingVertical: SPACING.md,
+    marginTop: SPACING.xl,
   },
   optionsContainer: {
     width: '100%',

@@ -37,6 +37,9 @@ claude_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 class ProfileCreate(BaseModel):
     user_id: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    photo_base64: Optional[str] = None
     age: int
     weight: float
     height: float
@@ -44,6 +47,9 @@ class ProfileCreate(BaseModel):
     language: str = 'fr'
 
 class ProfileUpdate(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    photo_base64: Optional[str] = None
     age: Optional[int] = None
     weight: Optional[float] = None
     height: Optional[float] = None
@@ -217,6 +223,9 @@ async def create_profile(profile: ProfileCreate):
         
         data = {
             "user_id": profile.user_id,
+            "first_name": profile.first_name,
+            "last_name": profile.last_name,
+            "photo_base64": profile.photo_base64,
             "age": profile.age,
             "weight": profile.weight,
             "height": profile.height,

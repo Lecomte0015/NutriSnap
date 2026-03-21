@@ -6,13 +6,14 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../src/constants/colors';
 import { useStore } from '../../src/store/useStore';
-import { Card, Button, Mascot } from '../../src/components';
+import { Card, Button } from '../../src/components';
 import { supabase } from '../../src/lib/supabase';
 import i18n from '../../src/i18n';
 
@@ -33,7 +34,7 @@ export default function ProfileScreen() {
           onPress: async () => {
             await supabase.auth.signOut();
             reset();
-            router.replace('/(auth)/login');
+            router.replace('/(auth)/welcome');
           },
         },
       ]
@@ -89,6 +90,15 @@ export default function ProfileScreen() {
 
   const subscriptionStatus = getSubscriptionStatus();
 
+  // Get display name
+  const getDisplayName = () => {
+    if (profile?.first_name) {
+      return profile.first_name;
+    }
+    // Fallback to email username
+    return user?.email?.split('@')[0] || 'Utilisateur';
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -103,16 +113,45 @@ export default function ProfileScreen() {
         {/* Profile Card */}
         <Card style={styles.profileCard}>
           <View style={styles.profileHeader}>
-            <View style={styles.avatarContainer}>
-              <Mascot mood="happy" size={70} showAnimation={false} />
-            </View>
+            {/* Profile Photo */}
+            <TouchableOpacity 
+              style={styles.avatarContainer}
+              onPress={() => router.push('/edit-profile')}
+            >
+              {profile?.photo_base64 ? (
+                <Image
+                  source={{ uri: `data:image/jpeg;base64,${profile.photo_base64}` }}
+                  style={styles.avatar}
+                />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Ionicons name="person" size={40} color={COLORS.textLight} />
+                </View>
+              )}
+              <View style={styles.editIconContainer}>
+                <Ionicons name="pencil" size={12} color={COLORS.textWhite} />
+              </View>
+            </TouchableOpacity>
+            
             <View style={styles.profileInfo}>
-              <Text style={styles.email}>{user?.email}</Text>
+              <Text style={styles.userName}>{getDisplayName()}</Text>
+              {profile?.last_name && (
+                <Text style={styles.userLastName}>{profile.last_name}</Text>
+              )}
               <View style={[styles.subscriptionBadge, { backgroundColor: subscriptionStatus.color }]}>
                 <Text style={styles.subscriptionText}>{subscriptionStatus.text}</Text>
               </View>
             </View>
           </View>
+          
+          {/* Edit Profile Button */}
+          <TouchableOpacity 
+            style={styles.editProfileButton}
+            onPress={() => router.push('/edit-profile')}
+          >
+            <Ionicons name="create-outline" size={18} color={COLORS.secondary} />
+            <Text style={styles.editProfileText}>Modifier le profil</Text>
+          </TouchableOpacity>
         </Card>
 
         {/* Personal Info */}
@@ -177,6 +216,14 @@ export default function ProfileScreen() {
           
           <TouchableOpacity style={styles.settingRow}>
             <View style={styles.settingLeft}>
+              <Ionicons name="notifications-outline" size={20} color={COLORS.secondary} />
+              <Text style={styles.settingText}>{t('settings.notifications')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.settingRow}>
+            <View style={styles.settingLeft}>
               <Ionicons name="help-circle-outline" size={20} color={COLORS.secondary} />
               <Text style={styles.settingText}>{t('profile.help')}</Text>
             </View>
@@ -199,6 +246,9 @@ export default function ProfileScreen() {
           variant="outline"
           style={styles.logoutButton}
         />
+
+        {/* App Version */}
+        <Text style={styles.versionText}>NutriSnap v1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -229,31 +279,74 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    overflow: 'hidden',
+    position: 'relative',
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  avatarPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editIconContainer: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: COLORS.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.cardBackground,
   },
   profileInfo: {
     flex: 1,
     marginLeft: SPACING.md,
   },
-  email: {
-    fontSize: 16,
-    fontWeight: '500',
+  userName: {
+    fontSize: 22,
+    fontWeight: 'bold',
     color: COLORS.textPrimary,
-    marginBottom: SPACING.xs,
+  },
+  userLastName: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
   subscriptionBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: SPACING.sm,
     paddingVertical: 4,
     borderRadius: BORDER_RADIUS.sm,
+    marginTop: SPACING.xs,
   },
   subscriptionText: {
     fontSize: 12,
     fontWeight: '600',
     color: COLORS.textWhite,
+  },
+  editProfileButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: SPACING.md,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.background,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  editProfileText: {
+    fontSize: 14,
+    color: COLORS.secondary,
+    fontWeight: '500',
+    marginLeft: SPACING.xs,
   },
   infoCard: {
     marginBottom: SPACING.md,
@@ -313,5 +406,11 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     marginTop: SPACING.md,
+  },
+  versionText: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: COLORS.textLight,
+    marginTop: SPACING.lg,
   },
 });
