@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,7 @@ export default function ResultScreen() {
   const { user, addMeal, setMascotMood, setMascotMessage } = useStore();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const hasUpdatedMascot = useRef(false);
   const t = i18n.t.bind(i18n);
 
   const analysis: AnalysisResult | null = params.analysis
@@ -29,33 +30,32 @@ export default function ResultScreen() {
     : null;
   const imageBase64 = params.image as string;
 
+  // Update mascot only once when component mounts
   useEffect(() => {
-    if (analysis) {
-      updateMascotBasedOnScore(analysis.score);
+    if (analysis && !hasUpdatedMascot.current) {
+      hasUpdatedMascot.current = true;
+      
+      let mood: MascotMood;
+      let message: string;
+
+      if (analysis.score >= 8) {
+        mood = 'excited';
+        message = t('mascot.greatMeal');
+      } else if (analysis.score >= 6) {
+        mood = 'happy';
+        message = t('mascot.goodMeal');
+      } else if (analysis.score >= 4) {
+        mood = 'warning';
+        message = t('mascot.averageMeal');
+      } else {
+        mood = 'sad';
+        message = t('mascot.poorMeal');
+      }
+
+      setMascotMood(mood);
+      setMascotMessage(message);
     }
-  }, [analysis]);
-
-  const updateMascotBasedOnScore = (score: number) => {
-    let mood: MascotMood;
-    let message: string;
-
-    if (score >= 8) {
-      mood = 'excited';
-      message = t('mascot.greatMeal');
-    } else if (score >= 6) {
-      mood = 'happy';
-      message = t('mascot.goodMeal');
-    } else if (score >= 4) {
-      mood = 'warning';
-      message = t('mascot.averageMeal');
-    } else {
-      mood = 'sad';
-      message = t('mascot.poorMeal');
-    }
-
-    setMascotMood(mood);
-    setMascotMessage(message);
-  };
+  }, []);
 
   const getScoreColor = (score: number) => {
     if (score >= 8) return COLORS.scoreExcellent;
