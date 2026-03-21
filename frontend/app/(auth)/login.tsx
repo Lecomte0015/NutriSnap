@@ -66,7 +66,7 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Mascot mood="happy" size={80} />
+            <Mascot mood="happy" size={130} />
             <Text style={styles.title}>{t('auth.welcome')}</Text>
             <Text style={styles.subtitle}>{t('auth.subtitle')}</Text>
           </View>
@@ -106,7 +106,7 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.forgotPassword}>
+            <TouchableOpacity style={styles.forgotPassword} onPress={() => router.push('/(auth)/forgot-password')}>
               <Text style={styles.forgotPasswordText}>{t('auth.forgotPassword')}</Text>
             </TouchableOpacity>
 
