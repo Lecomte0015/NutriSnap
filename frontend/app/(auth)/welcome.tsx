@@ -71,6 +71,32 @@ export default function WelcomeScreen() {
 
       {/* Content section */}
       <Animated.View style={[styles.contentSection, contentAnimatedStyle]}>
+        {/* Title */}
+        <Text style={styles.appName}>NutriSnap</Text>
+        <Text style={styles.tagline}>{t('auth.subtitle')}</Text>
+
+        {/* Features */}
+        <View style={styles.featuresContainer}>
+          <View style={styles.featureItem}>
+            <View style={styles.featureIcon}>
+              <Text style={styles.featureEmoji}>📸</Text>
+            </View>
+            <Text style={styles.featureText}>Scannez vos repas</Text>
+          </View>
+          <View style={styles.featureItem}>
+            <View style={styles.featureIcon}>
+              <Text style={styles.featureEmoji}>🤖</Text>
+            </View>
+            <Text style={styles.featureText}>Analyse IA instantanée</Text>
+          </View>
+          <View style={styles.featureItem}>
+            <View style={styles.featureIcon}>
+              <Text style={styles.featureEmoji}>💪</Text>
+            </View>
+            <Text style={styles.featureText}>Coaching personnalisé</Text>
+          </View>
+        </View>
+
         {/* Buttons */}
         <View style={styles.buttonsContainer}>
           <Button
@@ -108,7 +134,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   topSection: {
-    flex: 0.55,
+    flex: 0.4,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -117,10 +143,53 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   contentSection: {
-    flex: 0.45,
+    flex: 0.6,
     paddingHorizontal: SPACING.lg,
     alignItems: 'center',
+  },
+  appName: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: COLORS.secondary,
+    marginBottom: SPACING.xs,
+  },
+  tagline: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.lg,
+  },
+  featuresContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginBottom: SPACING.xl,
+  },
+  featureItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  featureIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: COLORS.cardBackground,
+    alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: SPACING.xs,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  featureEmoji: {
+    fontSize: 24,
+  },
+  featureText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    maxWidth: 90,
   },
   buttonsContainer: {
     width: '100%',
@@ -133,7 +202,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   trialInfo: {
-    marginTop: SPACING.xl,
+    marginTop: SPACING.lg,
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
     backgroundColor: 'rgba(47, 164, 167, 0.1)',
