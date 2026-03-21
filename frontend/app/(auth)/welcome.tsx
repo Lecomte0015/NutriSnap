@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   Dimensions,
-  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -66,44 +65,12 @@ export default function WelcomeScreen() {
       {/* Top section with mascot */}
       <View style={styles.topSection}>
         <Animated.View style={[styles.mascotContainer, mascotAnimatedStyle]}>
-          <Mascot mood="excited" size={200} />
+          <Mascot mood="excited" size={220} />
         </Animated.View>
       </View>
 
       {/* Content section */}
       <Animated.View style={[styles.contentSection, contentAnimatedStyle]}>
-        {/* Logo and title */}
-        <View style={styles.logoContainer}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoText}>N</Text>
-          </View>
-        </View>
-        
-        <Text style={styles.appName}>NutriSnap</Text>
-        <Text style={styles.tagline}>{t('auth.subtitle')}</Text>
-
-        {/* Features */}
-        <View style={styles.featuresContainer}>
-          <View style={styles.featureItem}>
-            <View style={styles.featureIcon}>
-              <Text style={styles.featureEmoji}>📸</Text>
-            </View>
-            <Text style={styles.featureText}>Scannez vos repas</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <View style={styles.featureIcon}>
-              <Text style={styles.featureEmoji}>🤖</Text>
-            </View>
-            <Text style={styles.featureText}>Analyse IA instantanée</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <View style={styles.featureIcon}>
-              <Text style={styles.featureEmoji}>💪</Text>
-            </View>
-            <Text style={styles.featureText}>Coaching personnalisé</Text>
-          </View>
-        </View>
-
         {/* Buttons */}
         <View style={styles.buttonsContainer}>
           <Button
@@ -141,7 +108,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   topSection: {
-    flex: 0.4,
+    flex: 0.55,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -150,69 +117,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   contentSection: {
-    flex: 0.6,
+    flex: 0.45,
     paddingHorizontal: SPACING.lg,
     alignItems: 'center',
-  },
-  logoContainer: {
-    marginBottom: SPACING.sm,
-  },
-  logoCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: COLORS.secondary,
-    alignItems: 'center',
     justifyContent: 'center',
-  },
-  logoText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: COLORS.textWhite,
-  },
-  appName: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: COLORS.secondary,
-    marginBottom: SPACING.xs,
-  },
-  tagline: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.lg,
-  },
-  featuresContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    marginBottom: SPACING.xl,
-  },
-  featureItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  featureIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: COLORS.cardBackground,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: SPACING.xs,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  featureEmoji: {
-    fontSize: 24,
-  },
-  featureText: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    maxWidth: 90,
   },
   buttonsContainer: {
     width: '100%',
@@ -225,7 +133,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   trialInfo: {
-    marginTop: SPACING.lg,
+    marginTop: SPACING.xl,
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
     backgroundColor: 'rgba(47, 164, 167, 0.1)',

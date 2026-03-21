@@ -18,7 +18,12 @@ interface MascotProps {
   showAnimation?: boolean;
 }
 
-// Sprite positions in the 2x3 grid
+// The sprite sheet is 1024x1024 with a 3x2 grid
+// Each sprite cell is approximately 341x512 pixels
+const SPRITE_WIDTH = 341;
+const SPRITE_HEIGHT = 512;
+
+// Sprite positions in the 2x3 grid (row, col)
 const SPRITE_POSITIONS: Record<MascotMood, { row: number; col: number }> = {
   idle: { row: 0, col: 0 },      // Top-left: confident/achiever
   excited: { row: 0, col: 1 },   // Top-middle: jumping/enthusiastic
@@ -116,25 +121,33 @@ export const Mascot: React.FC<MascotProps> = ({ mood, size = 120, showAnimation 
   });
 
   const position = SPRITE_POSITIONS[mood];
-  const spriteWidth = 341; // Each sprite is approximately 341px wide (1024/3)
-  const spriteHeight = 512; // Each sprite is approximately 512px tall (1024/2)
+  
+  // Calculate the scale factor to fit the sprite into the desired size
+  // We want the height to match the size (maintaining aspect ratio)
+  const scaleFactor = size / SPRITE_HEIGHT;
+  const scaledWidth = SPRITE_WIDTH * scaleFactor;
+  const scaledHeight = size;
+  
+  // Calculate image dimensions (full sprite sheet scaled)
+  const imageWidth = 1024 * scaleFactor;
+  const imageHeight = 1024 * scaleFactor;
+  
+  // Calculate offset to show the correct sprite
+  const offsetX = -position.col * scaledWidth;
+  const offsetY = -position.row * scaledHeight;
 
   return (
-    <Animated.View style={[styles.container, { width: size, height: size }, animatedStyle]}>
-      <View style={[styles.spriteContainer, { width: size, height: size }]}>
+    <Animated.View style={[styles.container, { width: scaledWidth, height: scaledHeight }, animatedStyle]}>
+      <View style={[styles.spriteContainer, { width: scaledWidth, height: scaledHeight }]}>
         <Image
           source={mascotImage}
-          style={[
-            styles.spriteImage,
-            {
-              width: size * 3,
-              height: size * 2,
-              transform: [
-                { translateX: -position.col * size },
-                { translateY: -position.row * size },
-              ],
-            },
-          ]}
+          style={{
+            width: imageWidth,
+            height: imageHeight,
+            position: 'absolute',
+            left: offsetX,
+            top: offsetY,
+          }}
           resizeMode="cover"
         />
       </View>
@@ -149,10 +162,6 @@ const styles = StyleSheet.create({
   },
   spriteContainer: {
     overflow: 'hidden',
-    borderRadius: 16,
-  },
-  spriteImage: {
-    position: 'absolute',
   },
 });
 
