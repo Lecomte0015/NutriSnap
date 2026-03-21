@@ -45,7 +45,7 @@ export default function SplashScreen() {
     }
 
     if (!user) {
-      router.replace('/(auth)/login');
+      router.replace('/(auth)/welcome');
     } else if (!onboardingCompleted) {
       router.replace('/onboarding');
     } else {

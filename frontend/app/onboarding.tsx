@@ -123,7 +123,7 @@ export default function OnboardingScreen() {
       case 'welcome':
         return (
           <View style={styles.stepContent}>
-            <Mascot mood="excited" size={120} />
+            <Mascot mood="excited" size={180} />
             <Text style={styles.stepTitle}>{t('onboarding.welcome')}</Text>
             <Text style={styles.stepSubtitle}>{t('onboarding.welcomeSubtitle')}</Text>
           </View>
@@ -132,7 +132,7 @@ export default function OnboardingScreen() {
       case 'age':
         return (
           <View style={styles.stepContent}>
-            <Mascot mood="happy" size={100} />
+            <Mascot mood="happy" size={140} />
             <Text style={styles.stepTitle}>{t('onboarding.age')}</Text>
             <View style={styles.inputRow}>
               <TextInput
@@ -152,7 +152,7 @@ export default function OnboardingScreen() {
       case 'weight':
         return (
           <View style={styles.stepContent}>
-            <Mascot mood="thinking" size={100} />
+            <Mascot mood="thinking" size={140} />
             <Text style={styles.stepTitle}>{t('onboarding.weight')}</Text>
             <View style={styles.inputRow}>
               <TextInput
@@ -172,7 +172,7 @@ export default function OnboardingScreen() {
       case 'height':
         return (
           <View style={styles.stepContent}>
-            <Mascot mood="idle" size={100} />
+            <Mascot mood="idle" size={140} />
             <Text style={styles.stepTitle}>{t('onboarding.height')}</Text>
             <View style={styles.inputRow}>
               <TextInput
@@ -192,7 +192,7 @@ export default function OnboardingScreen() {
       case 'goal':
         return (
           <View style={styles.stepContent}>
-            <Mascot mood="happy" size={100} />
+            <Mascot mood="happy" size={140} />
             <Text style={styles.stepTitle}>{t('onboarding.goal')}</Text>
             <View style={styles.optionsContainer}>
               {[
@@ -230,7 +230,7 @@ export default function OnboardingScreen() {
       case 'language':
         return (
           <View style={styles.stepContent}>
-            <Mascot mood="excited" size={100} />
+            <Mascot mood="excited" size={140} />
             <Text style={styles.stepTitle}>{t('onboarding.language')}</Text>
             <View style={styles.optionsContainer}>
               {[
