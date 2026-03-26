@@ -53,7 +53,9 @@
         {
           "photosPermission": "Select photos to analyze nutrition"
         }
-      ]
+      ],
+      "expo-localization",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

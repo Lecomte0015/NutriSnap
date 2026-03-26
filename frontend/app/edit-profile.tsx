@@ -10,6 +10,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,13 +28,15 @@ export default function EditProfileScreen() {
 
   const [firstName, setFirstName] = useState(profile?.first_name || '');
   const [lastName, setLastName] = useState(profile?.last_name || '');
-  const [photoBase64, setPhotoBase64] = useState(profile?.photo_base64 || '');
+  const [photoUrl, setPhotoUrl] = useState(profile?.photo_url || '');
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [age, setAge] = useState(profile?.age?.toString() || '');
   const [weight, setWeight] = useState(profile?.weight?.toString() || '');
   const [height, setHeight] = useState(profile?.height?.toString() || '');
   const [goal, setGoal] = useState(profile?.goal || 'maintain');
   const [language, setSelectedLanguage] = useState(profile?.language || 'fr');
   const [loading, setLoading] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const pickImage = async (useCamera: boolean) => {
     try {
@@ -68,11 +71,49 @@ export default function EditProfileScreen() {
       }
 
       if (!result.canceled && result.assets[0]?.base64) {
-        setPhotoBase64(result.assets[0].base64);
+        setPhotoPreview(result.assets[0].base64);
+        // Upload photo immediately
+        await uploadPhoto(result.assets[0].base64);
       }
     } catch (error) {
       console.error('Error picking image:', error);
       Alert.alert(t('common.error'), t('errors.generic'));
+    }
+  };
+
+  const uploadPhoto = async (base64: string) => {
+    if (!user) return;
+    
+    setUploadingPhoto(true);
+    try {
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/upload-photo`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: user.id,
+            photo_base64: base64,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setPhotoUrl(data.photo_url);
+        // Update profile in store
+        if (profile) {
+          setProfile({ ...profile, photo_url: data.photo_url });
+        }
+      } else {
+        const error = await response.json();
+        Alert.alert(t('common.error'), error.detail || 'Erreur lors de l\'upload de la photo');
+      }
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      Alert.alert(t('common.error'), t('errors.network'));
+    } finally {
+      setUploadingPhoto(false);
     }
   };
 
@@ -103,8 +144,8 @@ export default function EditProfileScreen() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             first_name: firstName.trim(),
-            last_name: lastName.trim(),
-            photo_base64: photoBase64 || null,
+            last_name: lastName.trim() || null,
+            photo_url: photoUrl || null,
             age: parseInt(age) || profile?.age,
             weight: parseFloat(weight) || profile?.weight,
             height: parseFloat(height) || profile?.height,
@@ -145,6 +186,19 @@ export default function EditProfileScreen() {
     }
   };
 
+  // Get photo source
+  const getPhotoSource = () => {
+    if (photoPreview) {
+      return { uri: `data:image/jpeg;base64,${photoPreview}` };
+    }
+    if (photoUrl) {
+      return { uri: photoUrl };
+    }
+    return null;
+  };
+
+  const photoSource = getPhotoSource();
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -167,10 +221,10 @@ export default function EditProfileScreen() {
         >
           {/* Photo Section */}
           <View style={styles.photoSection}>
-            <TouchableOpacity style={styles.photoContainer} onPress={showImageOptions}>
-              {photoBase64 ? (
+            <TouchableOpacity style={styles.photoContainer} onPress={showImageOptions} disabled={uploadingPhoto}>
+              {photoSource ? (
                 <Image
-                  source={{ uri: `data:image/jpeg;base64,${photoBase64}` }}
+                  source={photoSource}
                   style={styles.photo}
                 />
               ) : (
@@ -178,11 +232,19 @@ export default function EditProfileScreen() {
                   <Ionicons name="person" size={50} color={COLORS.textLight} />
                 </View>
               )}
-              <View style={styles.cameraIconContainer}>
-                <Ionicons name="camera" size={18} color={COLORS.textWhite} />
-              </View>
+              {uploadingPhoto ? (
+                <View style={styles.uploadingOverlay}>
+                  <ActivityIndicator size="small" color={COLORS.textWhite} />
+                </View>
+              ) : (
+                <View style={styles.cameraIconContainer}>
+                  <Ionicons name="camera" size={18} color={COLORS.textWhite} />
+                </View>
+              )}
             </TouchableOpacity>
-            <Text style={styles.photoHint}>Appuyez pour changer la photo</Text>
+            <Text style={styles.photoHint}>
+              {uploadingPhoto ? 'Upload en cours...' : 'Appuyez pour changer la photo'}
+            </Text>
           </View>
 
           {/* Form */}
@@ -324,6 +386,7 @@ export default function EditProfileScreen() {
             onPress={handleSave}
             loading={loading}
             style={styles.saveButton}
+            disabled={uploadingPhoto}
           />
         </ScrollView>
       </KeyboardAvoidingView>
@@ -396,6 +459,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 3,
     borderColor: COLORS.background,
+  },
+  uploadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   photoHint: {
     marginTop: SPACING.sm,

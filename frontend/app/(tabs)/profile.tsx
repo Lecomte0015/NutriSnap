@@ -118,9 +118,9 @@ export default function ProfileScreen() {
               style={styles.avatarContainer}
               onPress={() => router.push('/edit-profile')}
             >
-              {profile?.photo_base64 ? (
+              {profile?.photo_url ? (
                 <Image
-                  source={{ uri: `data:image/jpeg;base64,${profile.photo_base64}` }}
+                  source={{ uri: profile.photo_url }}
                   style={styles.avatar}
                 />
               ) : (

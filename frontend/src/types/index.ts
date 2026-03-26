@@ -9,7 +9,7 @@ export interface Profile {
   user_id: string;
   first_name?: string;
   last_name?: string;
-  photo_base64?: string;
+  photo_url?: string;
   age: number;
   weight: number;
   height: number;
@@ -18,6 +18,14 @@ export interface Profile {
   language: 'fr' | 'de' | 'it';
   created_at?: string;
   updated_at?: string;
+}
+
+export interface WeightEntry {
+  id: string;
+  user_id: string;
+  weight: number;
+  date: string;
+  created_at: string;
 }
 
 export interface Meal {

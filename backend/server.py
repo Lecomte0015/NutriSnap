@@ -39,7 +39,7 @@ class ProfileCreate(BaseModel):
     user_id: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    photo_base64: Optional[str] = None
+    photo_url: Optional[str] = None
     age: int
     weight: float
     height: float
@@ -49,13 +49,17 @@ class ProfileCreate(BaseModel):
 class ProfileUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    photo_base64: Optional[str] = None
+    photo_url: Optional[str] = None
     age: Optional[int] = None
     weight: Optional[float] = None
     height: Optional[float] = None
     goal: Optional[str] = None
     daily_calories: Optional[int] = None
     language: Optional[str] = None
+
+class PhotoUpload(BaseModel):
+    user_id: str
+    photo_base64: str
 
 class MealAnalysisRequest(BaseModel):
     user_id: str
@@ -225,7 +229,7 @@ async def create_profile(profile: ProfileCreate):
             "user_id": profile.user_id,
             "first_name": profile.first_name,
             "last_name": profile.last_name,
-            "photo_base64": profile.photo_base64,
+            "photo_url": profile.photo_url,
             "age": profile.age,
             "weight": profile.weight,
             "height": profile.height,
@@ -293,6 +297,88 @@ async def update_profile(user_id: str, profile: ProfileUpdate):
         
         result = supabase.table("profiles").update(update_data).eq("user_id", user_id).execute()
         return {"success": True, "profile": result.data[0] if result.data else update_data}
+    except Exception as e:
+        print(f"Error updating profile: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/upload-photo")
+async def upload_photo(data: PhotoUpload):
+    """Upload profile photo to Supabase Storage"""
+    try:
+        import uuid
+        
+        # Decode base64 image
+        image_data = base64.b64decode(data.photo_base64)
+        
+        # Generate unique filename
+        filename = f"{data.user_id}/{uuid.uuid4()}.jpg"
+        
+        # Upload to Supabase Storage
+        result = supabase.storage.from_("photo").upload(
+            path=filename,
+            file=image_data,
+            file_options={"content-type": "image/jpeg", "upsert": "true"}
+        )
+        
+        # Get public URL
+        public_url = supabase.storage.from_("photo").get_public_url(filename)
+        
+        # Update profile with photo URL
+        supabase.table("profiles").update({
+            "photo_url": public_url
+        }).eq("user_id", data.user_id).execute()
+        
+        return {"success": True, "photo_url": public_url}
+    except Exception as e:
+        print(f"Error uploading photo: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ---- WEIGHT TRACKING ----
+
+class WeightEntry(BaseModel):
+    user_id: str
+    weight: float
+
+@app.post("/api/weight")
+async def add_weight_entry(entry: WeightEntry):
+    """Add a weight entry for tracking"""
+    try:
+        data = {
+            "user_id": entry.user_id,
+            "weight": entry.weight,
+            "date": datetime.now().date().isoformat(),
+        }
+        result = supabase.table("weight_history").insert(data).execute()
+        
+        # Also update current weight in profile
+        supabase.table("profiles").update({
+            "weight": entry.weight
+        }).eq("user_id", entry.user_id).execute()
+        
+        return {"success": True, "entry": result.data[0] if result.data else data}
+    except Exception as e:
+        print(f"Error adding weight entry: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/weight/{user_id}")
+async def get_weight_history(user_id: str, days: int = 30):
+    """Get weight history for a user"""
+    try:
+        from_date = (datetime.now() - timedelta(days=days)).date().isoformat()
+        result = supabase.table("weight_history").select("*").eq("user_id", user_id).gte("date", from_date).order("date").execute()
+        return {"entries": result.data or []}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ---- WEEKLY STATS ----
+
+@app.get("/api/stats/{user_id}/weekly")
+async def get_weekly_stats(user_id: str):
+    """Get weekly nutrition stats for charts"""
+    try:
+        from_date = (datetime.now() - timedelta(days=7)).date().isoformat()
+        result = supabase.table("daily_stats").select("*").eq("user_id", user_id).gte("date", from_date).order("date").execute()
+        return {"stats": result.data or []}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
