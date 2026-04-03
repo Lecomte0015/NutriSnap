@@ -12,9 +12,10 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS } from '../src/constants/colors';
-import { Button, MascotAnimated } from '../src/components';
+import { Button, MascotAnimated, ScanOverlay } from '../src/components';
 import { useStore } from '../src/store/useStore';
 import { useMascotController } from '../src/hooks/useMascotController';
 import i18n from '../src/i18n';
@@ -34,6 +35,9 @@ export default function CameraScreen() {
     if (!cameraRef.current) return;
 
     try {
+      // Haptic feedback when taking photo
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.7,
         base64: true,
@@ -41,6 +45,8 @@ export default function CameraScreen() {
 
       if (photo?.base64) {
         setCapturedImage(photo.base64);
+        // Success haptic
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (error) {
       console.error('Error taking picture:', error);
@@ -230,13 +236,9 @@ export default function CameraScreen() {
         style={styles.camera}
         facing={facing}
       >
+        {/* Scan Overlay with animated guides */}
+        <ScanOverlay isScanning={false} />
         <View style={styles.cameraOverlay}>
-          <View style={styles.frameGuide}>
-            <View style={[styles.corner, styles.topLeft]} />
-            <View style={[styles.corner, styles.topRight]} />
-            <View style={[styles.corner, styles.bottomLeft]} />
-            <View style={[styles.corner, styles.bottomRight]} />
-          </View>
           <Text style={styles.guideText}>Placez votre repas dans le cadre</Text>
         </View>
       </CameraView>

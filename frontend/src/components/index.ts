@@ -11,3 +11,8 @@ export { SocialProof } from './SocialProof';
 export { BadgeCard } from './BadgeCard';
 export { LevelProgress } from './LevelProgress';
 export { WeeklyChallengeCard } from './WeeklyChallenge';
+export { Celebration } from './Celebration';
+export { AnimatedPressable } from './AnimatedPressable';
+export { ScanOverlay } from './ScanOverlay';
+export { AnimatedNumber } from './AnimatedNumber';
+export { ProgressSteps } from './ProgressSteps';
