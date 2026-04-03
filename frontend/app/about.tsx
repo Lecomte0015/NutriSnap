@@ -5,7 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Linking,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +15,40 @@ import { Card, MascotAnimated } from '../src/components';
 
 export default function AboutScreen() {
   const router = useRouter();
+
+  const showPrivacyPolicy = () => {
+    Alert.alert(
+      'Politique de confidentialite',
+      'NutriSnap respecte votre vie privee.\n\n' +
+      '- Vos donnees personnelles sont stockees de maniere securisee\n' +
+      '- Nous ne vendons jamais vos informations\n' +
+      '- Vos photos de repas sont analysees puis supprimees\n' +
+      '- Vous pouvez supprimer votre compte a tout moment\n\n' +
+      'Pour plus de details, contactez-nous a privacy@nutrisnap.app',
+      [{ text: 'Fermer', style: 'default' }]
+    );
+  };
+
+  const showTermsOfService = () => {
+    Alert.alert(
+      'Conditions d\'utilisation',
+      'En utilisant NutriSnap, vous acceptez :\n\n' +
+      '- D\'utiliser l\'app de maniere responsable\n' +
+      '- De ne pas partager de contenu inapproprie\n' +
+      '- Que l\'analyse IA est indicative et non medicale\n' +
+      '- De consulter un professionnel pour tout regime\n\n' +
+      'Pour plus de details, contactez-nous a legal@nutrisnap.app',
+      [{ text: 'Fermer', style: 'default' }]
+    );
+  };
+
+  const showWebsite = () => {
+    Alert.alert(
+      'Site web',
+      'Visitez notre site web pour plus d\'informations :\n\nwww.nutrisnap.app\n\n(Fonctionnalite de navigation externe bientot disponible)',
+      [{ text: 'Fermer', style: 'default' }]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -76,11 +110,11 @@ export default function AboutScreen() {
 
         {/* Links */}
         <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Liens utiles</Text>
+          <Text style={styles.cardTitle}>Informations legales</Text>
           
           <TouchableOpacity 
             style={styles.linkRow}
-            onPress={() => Linking.openURL('https://nutrisnap.app/privacy')}
+            onPress={showPrivacyPolicy}
           >
             <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.textSecondary} />
             <Text style={styles.linkText}>Politique de confidentialite</Text>
@@ -89,7 +123,7 @@ export default function AboutScreen() {
 
           <TouchableOpacity 
             style={styles.linkRow}
-            onPress={() => Linking.openURL('https://nutrisnap.app/terms')}
+            onPress={showTermsOfService}
           >
             <Ionicons name="document-text-outline" size={20} color={COLORS.textSecondary} />
             <Text style={styles.linkText}>Conditions d'utilisation</Text>
@@ -97,8 +131,8 @@ export default function AboutScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={styles.linkRow}
-            onPress={() => Linking.openURL('https://nutrisnap.app')}
+            style={[styles.linkRow, { borderBottomWidth: 0 }]}
+            onPress={showWebsite}
           >
             <Ionicons name="globe-outline" size={20} color={COLORS.textSecondary} />
             <Text style={styles.linkText}>Site web</Text>

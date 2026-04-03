@@ -5,7 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Linking,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,23 +23,34 @@ export default function HelpScreen() {
     },
     {
       question: 'Comment fonctionne le score nutritionnel ?',
-      answer: 'Le score va de 1 a 10 et est calcule en fonction de l equilibre nutritionnel de ton repas : variete des aliments, rapport proteines/glucides/lipides, et presence de legumes.',
+      answer: 'Le score va de 1 a 10 et est calcule en fonction de l\'equilibre nutritionnel de ton repas : variete des aliments, rapport proteines/glucides/lipides, et presence de legumes.',
     },
     {
       question: 'Comment modifier mon objectif calorique ?',
-      answer: 'Va dans Profil > Modifier le profil pour ajuster ton poids, ta taille ou ton objectif. Ton objectif calorique sera automatiquement recalcule.',
+      answer: 'Va dans Profil puis Modifier le profil pour ajuster ton poids, ta taille ou ton objectif. Ton objectif calorique sera automatiquement recalcule.',
     },
     {
-      question: 'Qu est-ce que la serie (streak) ?',
+      question: 'Qu\'est-ce que la serie (streak) ?',
       answer: 'La serie represente le nombre de jours consecutifs ou tu as scanne au moins un repas. Plus ta serie est longue, plus tu gagnes de badges !',
     },
     {
-      question: 'Comment fonctionne l abonnement Premium ?',
-      answer: 'Premium te donne acces aux scans illimites, au coach IA, aux suggestions de recettes et bien plus. Tu peux t abonner depuis Profil > Abonnement.',
+      question: 'Comment fonctionne l\'abonnement Premium ?',
+      answer: 'Premium te donne acces aux scans illimites, au coach IA, aux suggestions de recettes et bien plus. Tu peux t\'abonner depuis Profil puis Abonnement.',
     },
   ];
 
   const [expandedIndex, setExpandedIndex] = React.useState<number | null>(null);
+
+  const handleContactSupport = () => {
+    Alert.alert(
+      'Contacter le support',
+      'Envoyer un email a support@nutrisnap.app ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Envoyer', onPress: () => Alert.alert('Email', 'Fonctionnalite bientot disponible !') },
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -93,7 +104,7 @@ export default function HelpScreen() {
           
           <TouchableOpacity
             style={styles.contactButton}
-            onPress={() => Linking.openURL('mailto:support@nutrisnap.app')}
+            onPress={handleContactSupport}
           >
             <Ionicons name="mail-outline" size={20} color={COLORS.textWhite} />
             <Text style={styles.contactButtonText}>Contacter le support</Text>
