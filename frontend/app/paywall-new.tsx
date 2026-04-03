@@ -40,14 +40,14 @@ const PLANS: Plan[] = [
   {
     id: 'free',
     name: 'Gratuit',
-    price: '0\u20ac',
+    price: '0 CHF',
     pricePerDay: '',
     period: '',
     features: [
       { text: '3 scans par jour', included: true },
       { text: 'Suivi des calories', included: true },
       { text: 'Historique 7 jours', included: true },
-      { text: 'Scans illimit\u00e9s', included: false },
+      { text: 'Scans illimites', included: false },
       { text: 'Coach IA personnel', included: false },
       { text: 'Suggestions recettes', included: false },
       { text: 'Export PDF', included: false },
@@ -57,11 +57,11 @@ const PLANS: Plan[] = [
   {
     id: 'monthly',
     name: 'Mensuel',
-    price: '9.99\u20ac',
-    pricePerDay: '0.33\u20ac/jour',
+    price: '9.99 CHF',
+    pricePerDay: '0.33 CHF/jour',
     period: '/mois',
     features: [
-      { text: 'Scans illimit\u00e9s', included: true },
+      { text: 'Scans illimites', included: true },
       { text: 'Suivi des calories', included: true },
       { text: 'Historique complet', included: true },
       { text: 'Coach IA personnel', included: true },
@@ -75,12 +75,12 @@ const PLANS: Plan[] = [
   {
     id: 'yearly',
     name: 'Annuel',
-    price: '59.99\u20ac',
-    pricePerDay: '0.16\u20ac/jour',
+    price: '59.99 CHF',
+    pricePerDay: '0.16 CHF/jour',
     period: '/an',
-    savings: '\u00c9conomisez 50%',
+    savings: 'Economisez 50%',
     features: [
-      { text: 'Scans illimit\u00e9s', included: true },
+      { text: 'Scans illimites', included: true },
       { text: 'Suivi des calories', included: true },
       { text: 'Historique complet', included: true },
       { text: 'Coach IA personnel', included: true },
@@ -116,7 +116,6 @@ export default function PaywallScreen() {
   };
 
   const handleSubscribe = () => {
-    // Would integrate with RevenueCat here
     console.log('Subscribe to:', selectedPlan);
     router.back();
   };
@@ -138,7 +137,7 @@ export default function PaywallScreen() {
       >
         {plan.popular && (
           <View style={styles.popularBadge}>
-            <Text style={styles.popularText}>\u2b50 POPULAIRE</Text>
+            <Text style={styles.popularText}>POPULAIRE</Text>
           </View>
         )}
 
@@ -186,9 +185,9 @@ export default function PaywallScreen() {
         {/* Hero Section */}
         <View style={styles.heroSection}>
           <MascotAnimated mood="excited" size={120} />
-          <Text style={styles.heroTitle}>Passe au niveau sup\u00e9rieur !</Text>
+          <Text style={styles.heroTitle}>Passe au niveau superieur !</Text>
           <Text style={styles.heroSubtitle}>
-            D\u00e9bloque toutes les fonctionnalit\u00e9s et atteins tes objectifs plus rapidement
+            Debloque toutes les fonctionnalites et atteins tes objectifs plus rapidement
           </Text>
         </View>
 
@@ -199,7 +198,7 @@ export default function PaywallScreen() {
         <View style={styles.guaranteeContainer}>
           <Ionicons name="shield-checkmark" size={20} color={COLORS.success} />
           <Text style={styles.guaranteeText}>
-            Garantie satisfait ou rembours\u00e9 14 jours
+            Garantie satisfait ou rembourse 14 jours
           </Text>
         </View>
 
@@ -216,7 +215,7 @@ export default function PaywallScreen() {
         {/* Features Comparison */}
         {selectedPlanData && selectedPlanData.id !== 'free' && (
           <Card style={styles.featuresCard}>
-            <Text style={styles.featuresTitle}>\u2705 Ce qui est inclus</Text>
+            <Text style={styles.featuresTitle}>Ce qui est inclus</Text>
             {selectedPlanData.features.map((feature, index) => (
               <View key={index} style={styles.featureRow}>
                 <Ionicons
@@ -251,7 +250,7 @@ export default function PaywallScreen() {
                 style={styles.ctaGradient}
               >
                 <Text style={styles.ctaText}>Commencer maintenant</Text>
-                <Text style={styles.ctaSubtext}>Annulation facile \u00e0 tout moment</Text>
+                <Text style={styles.ctaSubtext}>Annulation facile a tout moment</Text>
               </LinearGradient>
             </TouchableOpacity>
           ) : (
@@ -268,7 +267,7 @@ export default function PaywallScreen() {
         <View style={styles.securitySection}>
           <View style={styles.securityBadge}>
             <Ionicons name="lock-closed" size={16} color={COLORS.textLight} />
-            <Text style={styles.securityText}>Paiement s\u00e9curis\u00e9</Text>
+            <Text style={styles.securityText}>Paiement securise</Text>
           </View>
           <View style={styles.securityBadge}>
             <Ionicons name="card" size={16} color={COLORS.textLight} />
@@ -406,7 +405,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xs,
   },
   planPrice: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
     color: COLORS.textPrimary,
   },

@@ -17,7 +17,7 @@ import Animated, {
   withDelay,
 } from 'react-native-reanimated';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants/colors';
-import { Button, Mascot } from '../../src/components';
+import { Button, MascotAnimated } from '../../src/components';
 import i18n from '../../src/i18n';
 
 const { width, height } = Dimensions.get('window');
@@ -65,7 +65,7 @@ export default function WelcomeScreen() {
       {/* Top section with mascot */}
       <View style={styles.topSection}>
         <Animated.View style={[styles.mascotContainer, mascotAnimatedStyle]}>
-          <Mascot mood="excited" size={220} />
+          <MascotAnimated mood="excited" size={200} />
         </Animated.View>
       </View>
 

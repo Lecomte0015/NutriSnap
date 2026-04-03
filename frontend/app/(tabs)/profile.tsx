@@ -240,7 +240,7 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.settingRow}>
+          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/notifications')}>
             <View style={styles.settingLeft}>
               <Ionicons name="notifications-outline" size={20} color={COLORS.secondary} />
               <Text style={styles.settingText}>{t('settings.notifications')}</Text>
@@ -248,7 +248,7 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.settingRow}>
+          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/help')}>
             <View style={styles.settingLeft}>
               <Ionicons name="help-circle-outline" size={20} color={COLORS.secondary} />
               <Text style={styles.settingText}>{t('profile.help')}</Text>
@@ -256,7 +256,7 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.settingRow}>
+          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/about')}>
             <View style={styles.settingLeft}>
               <Ionicons name="information-circle-outline" size={20} color={COLORS.secondary} />
               <Text style={styles.settingText}>{t('profile.about')}</Text>

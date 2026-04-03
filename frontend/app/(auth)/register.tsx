@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../src/constants/colors';
 import { supabase } from '../../src/lib/supabase';
-import { Button, Mascot } from '../../src/components';
+import { Button, MascotAnimated } from '../../src/components';
 import i18n from '../../src/i18n';
 
 export default function RegisterScreen() {
@@ -82,7 +82,7 @@ export default function RegisterScreen() {
           </TouchableOpacity>
 
           <View style={styles.header}>
-            <Mascot mood="excited" size={130} />
+            <MascotAnimated mood="excited" size={130} />
             <Text style={styles.title}>{t('auth.register')}</Text>
             <Text style={styles.subtitle}>Créez votre compte NutriSnap</Text>
           </View>

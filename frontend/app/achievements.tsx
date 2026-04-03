@@ -5,14 +5,13 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/colors';
 import { Card, MascotAnimated } from '../src/components';
-import { BadgeCard, LevelProgress, WeeklyChallengeCard, Testimonials, SocialProof } from '../src/components';
+import { BadgeCard, LevelProgress, WeeklyChallengeCard } from '../src/components';
 import { BADGES_CONFIG, WeeklyChallenge, Badge } from '../src/types/gamification';
 import { useStore } from '../src/store/useStore';
 
@@ -20,11 +19,10 @@ export default function AchievementsScreen() {
   const router = useRouter();
   const { profile } = useStore();
 
-  // Demo data - would normally come from backend/store
   const userXp = 450;
   const userBadges: Badge[] = BADGES_CONFIG.map((badge, index) => ({
     ...badge,
-    isUnlocked: index < 4, // First 4 badges unlocked for demo
+    isUnlocked: index < 4,
     unlockedAt: index < 4 ? new Date().toISOString() : undefined,
   }));
 
@@ -55,8 +53,8 @@ export default function AchievementsScreen() {
     },
     {
       id: '3',
-      title: 'S\u00e9rie en feu',
-      description: 'Maintiens une s\u00e9rie de 3 jours',
+      title: 'Serie en feu',
+      description: 'Maintiens une serie de 3 jours',
       type: 'streak',
       target: 3,
       progress: 3,
@@ -73,7 +71,7 @@ export default function AchievementsScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.title}>Mes succ\u00e8s</Text>
+        <Text style={styles.title}>Mes succes</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -90,13 +88,13 @@ export default function AchievementsScreen() {
         <View style={styles.mascotSection}>
           <MascotAnimated mood="excited" size={100} />
           <Text style={styles.mascotText}>
-            Super progression ! Continue comme \u00e7a ! \ud83c\udf1f
+            Super progression ! Continue comme ca !
           </Text>
         </View>
 
         {/* Weekly Challenges */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>\ud83c\udfaf D\u00e9fis de la semaine</Text>
+          <Text style={styles.sectionTitle}>Defis de la semaine</Text>
           {weeklyChallenges.map((challenge) => (
             <WeeklyChallengeCard key={challenge.id} challenge={challenge} />
           ))}
@@ -104,7 +102,7 @@ export default function AchievementsScreen() {
 
         {/* Badges */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>\ud83c\udfc5 Badges</Text>
+          <Text style={styles.sectionTitle}>Badges</Text>
           <View style={styles.badgesGrid}>
             {userBadges.map((badge) => (
               <BadgeCard key={badge.id} badge={badge} size="medium" />
@@ -114,11 +112,11 @@ export default function AchievementsScreen() {
 
         {/* Stats Card */}
         <Card style={styles.statsCard}>
-          <Text style={styles.statsTitle}>\ud83d\udcca Tes statistiques</Text>
+          <Text style={styles.statsTitle}>Tes statistiques</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>23</Text>
-              <Text style={styles.statLabel}>Repas scann\u00e9s</Text>
+              <Text style={styles.statLabel}>Repas scannes</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>7.4</Text>
@@ -126,7 +124,7 @@ export default function AchievementsScreen() {
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>5</Text>
-              <Text style={styles.statLabel}>Jours de s\u00e9rie</Text>
+              <Text style={styles.statLabel}>Jours de serie</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>-2.3kg</Text>

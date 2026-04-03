@@ -28,31 +28,31 @@ interface Message {
 const COACH_RESPONSES = [
   {
     keywords: ['bonjour', 'salut', 'hello', 'coucou'],
-    response: "Salut champion ! \ud83d\udc4b Je suis ton coach nutrition. Comment puis-je t'aider aujourd'hui ?",
+    response: "Salut champion ! Je suis ton coach nutrition. Comment puis-je t'aider aujourd'hui ?",
   },
   {
     keywords: ['maigrir', 'perdre', 'poids', 'mincir'],
-    response: "Pour perdre du poids efficacement, je te conseille :\n\n1. \ud83e\udd57 Privil\u00e9gie les l\u00e9gumes \u00e0 chaque repas\n2. \ud83d\udca7 Bois au moins 2L d'eau par jour\n3. \ud83c\udfcb\ufe0f Fais 30min d'activit\u00e9 physique quotidienne\n4. \ud83d\ude34 Dors 7-8h par nuit\n\nScanne tes repas pour que je puisse t'aider \u00e0 suivre ta progression !",
+    response: "Pour perdre du poids efficacement, je te conseille :\n\n1. Privilegie les legumes a chaque repas\n2. Bois au moins 2L d'eau par jour\n3. Fais 30min d'activite physique quotidienne\n4. Dors 7-8h par nuit\n\nScanne tes repas pour que je puisse t'aider a suivre ta progression !",
   },
   {
-    keywords: ['prot\u00e9ine', 'muscle', 'musculation', 'prendre'],
-    response: "Pour prendre du muscle, voici mes conseils :\n\n1. \ud83e\udd69 Mange 1.6-2g de prot\u00e9ines par kg de poids\n2. \ud83c\udf5a Consomme assez de glucides complexes\n3. \ud83c\udfcb\ufe0f Entra\u00eene-toi r\u00e9guli\u00e8rement\n4. \ud83d\ude34 R\u00e9cup\u00e8re bien entre les s\u00e9ances\n\nScanne tes repas pour v\u00e9rifier tes apports en prot\u00e9ines !",
+    keywords: ['proteine', 'muscle', 'musculation', 'prendre'],
+    response: "Pour prendre du muscle, voici mes conseils :\n\n1. Mange 1.6-2g de proteines par kg de poids\n2. Consomme assez de glucides complexes\n3. Entraine-toi regulierement\n4. Recupere bien entre les seances\n\nScanne tes repas pour verifier tes apports en proteines !",
   },
   {
     keywords: ['snack', 'grignoter', 'faim', 'envie'],
-    response: "Une petite faim ? Voici des snacks sains :\n\n\ud83c\udf4e Pomme + beurre de cacahu\u00e8te\n\ud83e\udd5c Une poign\u00e9e d'amandes\n\ud83e\udd5b Yaourt grec + fruits\n\ud83e\udd55 B\u00e2tonnets de l\u00e9gumes + houmous\n\nCes options te caleront sans exploser tes calories !",
+    response: "Une petite faim ? Voici des snacks sains :\n\n- Pomme + beurre de cacahuete\n- Une poignee d'amandes\n- Yaourt grec + fruits\n- Batonnets de legumes + houmous\n\nCes options te caleront sans exploser tes calories !",
   },
   {
     keywords: ['calorie', 'combien', 'manger'],
-    response: "Le nombre de calories d\u00e9pend de ton objectif ! \ud83c\udfaf\n\nTon profil indique un objectif de calories quotidien. Pour le respecter :\n\n1. Scanne chaque repas\n2. V\u00e9rifie ton total sur le tableau de bord\n3. Ajuste tes portions si n\u00e9cessaire\n\nN'oublie pas : la qualit\u00e9 compte autant que la quantit\u00e9 !",
+    response: "Le nombre de calories depend de ton objectif !\n\nTon profil indique un objectif de calories quotidien. Pour le respecter :\n\n1. Scanne chaque repas\n2. Verifie ton total sur le tableau de bord\n3. Ajuste tes portions si necessaire\n\nN'oublie pas : la qualite compte autant que la quantite !",
   },
   {
-    keywords: ['merci', 'super', 'g\u00e9nial', 'top'],
-    response: "Avec plaisir ! \ud83d\ude0a C'est un honneur de t'accompagner dans ton parcours. N'h\u00e9site pas si tu as d'autres questions !",
+    keywords: ['merci', 'super', 'genial', 'top'],
+    response: "Avec plaisir ! C'est un honneur de t'accompagner dans ton parcours. N'hesite pas si tu as d'autres questions !",
   },
 ];
 
-const DEFAULT_RESPONSE = "Je comprends ta question ! \ud83e\udd14 Pour te donner les meilleurs conseils, scanne tes repas et je pourrai analyser ton alimentation en d\u00e9tail. Sinon, pose-moi une question sur la nutrition, les calories, ou les exercices !";
+const DEFAULT_RESPONSE = "Je comprends ta question ! Pour te donner les meilleurs conseils, scanne tes repas et je pourrai analyser ton alimentation en detail. Sinon, pose-moi une question sur la nutrition, les calories, ou les exercices !";
 
 export default function CoachScreen() {
   const router = useRouter();
@@ -60,7 +60,7 @@ export default function CoachScreen() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: `Salut ${profile?.first_name || 'champion'} ! \ud83d\udc4b\n\nJe suis ton coach nutrition personnel. Pose-moi n'importe quelle question sur :\n\n\u2022 Comment atteindre tes objectifs\n\u2022 Les meilleurs aliments \u00e0 consommer\n\u2022 Des conseils personnalis\u00e9s\n\nJe suis l\u00e0 pour t'aider ! \ud83d\udcaa`,
+      text: `Salut ${profile?.first_name || 'champion'} !\n\nJe suis ton coach nutrition personnel. Pose-moi n'importe quelle question sur :\n\n- Comment atteindre tes objectifs\n- Les meilleurs aliments a consommer\n- Des conseils personnalises\n\nJe suis la pour t'aider !`,
       isUser: false,
       timestamp: new Date(),
     },
@@ -96,7 +96,6 @@ export default function CoachScreen() {
     setInputText('');
     setIsTyping(true);
 
-    // Simulate typing delay
     setTimeout(() => {
       const response = getCoachResponse(userMessage.text);
       const botMessage: Message = {
@@ -127,15 +126,15 @@ export default function CoachScreen() {
         
         <View style={styles.premiumLock}>
           <MascotAnimated mood="sad" size={150} />
-          <Text style={styles.lockTitle}>Fonctionnalit\u00e9 Premium</Text>
+          <Text style={styles.lockTitle}>Fonctionnalite Premium</Text>
           <Text style={styles.lockText}>
-            D\u00e9bloque ton coach nutrition personnel avec l'abonnement Premium !
+            Debloque ton coach nutrition personnel avec l'abonnement Premium !
           </Text>
           <TouchableOpacity
             style={styles.upgradeButton}
-            onPress={() => router.push('/paywall')}
+            onPress={() => router.push('/paywall-new')}
           >
-            <Text style={styles.upgradeButtonText}>Passer \u00e0 Premium</Text>
+            <Text style={styles.upgradeButtonText}>Passer a Premium</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -187,7 +186,7 @@ export default function CoachScreen() {
           {isTyping && (
             <View style={[styles.messageBubble, styles.botBubble, styles.typingBubble]}>
               <ActivityIndicator size="small" color={COLORS.secondary} />
-              <Text style={styles.typingText}>En train d'\u00e9crire...</Text>
+              <Text style={styles.typingText}>En train d'ecrire...</Text>
             </View>
           )}
         </ScrollView>
