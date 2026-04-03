@@ -51,26 +51,60 @@
 - [x] Pull-to-refresh
 - [x] Graphique hebdomadaire des calories (WeeklyChart)
 
-### 🐾 Mascotte
+### 🐾 Mascotte Animée
 - [x] Composant SVG animé avec React Native Reanimated
-- [x] Différentes humeurs (idle, happy, excited, warning, sad, thinking)
+- [x] 6 humeurs : idle, happy, excited, warning, sad, thinking
 - [x] Animation de respiration permanente (micro-animation idle)
-- [x] Transitions fluides entre les états
-- [x] Messages personnalisés selon le contexte
+- [x] Transitions fluides entre les états à 60fps
+- [x] Expressions faciales dynamiques (sourcils, bouche, yeux)
+- [x] Éléments visuels : joues roses, trous de fromage, reflets
+- [x] Effets spéciaux : larme (sad), bulles de réflexion (thinking), dents (excited)
 - [x] Hook `useMascotController` pour contrôle intelligent
 - [x] Réaction automatique au score nutritionnel
 - [x] Délai naturel avant réaction (200-500ms)
 - [x] Retour automatique vers idle après 4 secondes
 
+### 🏆 Gamification (NOUVEAU)
+- [x] **Système de niveaux** - Débutant → Légende (6 niveaux)
+- [x] **Badges/Achievements** - 8 badges à débloquer
+  - Premier Pas (1er scan)
+  - Photographe Culinaire (10 scans)
+  - Expert Scanner (50 scans)
+  - Sur la Bonne Voie (3 jours streak)
+  - Semaine Parfaite (7 jours streak)
+  - Mois Légendaire (30 jours streak)
+  - Mangeur Sain (score moyen > 8)
+  - Économiseur (1000 kcal économisées)
+- [x] **Défis hebdomadaires** - Challenges avec récompenses XP
+- [x] **Progression XP** - Barre de progression avec niveaux
+- [x] **Page Mes Succès** - Vue complète des achievements
+
+### 💬 Social Proof (NOUVEAU)
+- [x] **Compteur social** - Utilisateurs, repas analysés, note moyenne
+- [x] **Témoignages** - Carrousel avec photos et résultats
+- [x] **Résultats avant/après** - Poids perdu et durée
+
+### 🤖 Coach IA (NOUVEAU - Premium)
+- [x] **Chat interactif** avec la mascotte
+- [x] **Conseils nutritionnels** personnalisés
+- [x] **Réponses contextuelles** (perte de poids, muscles, snacks, etc.)
+- [x] **Interface moderne** style messagerie
+- [x] **Mode thinking** pendant la réponse
+
+### 💳 Paywall Optimisé (NOUVEAU)
+- [x] **Comparaison Free vs Premium** - Tableau visuel
+- [x] **3 plans** : Gratuit, Mensuel (9.99€), Annuel (59.99€)
+- [x] **Prix psychologique** - "0.33€/jour" au lieu de "9.99€/mois"
+- [x] **Badge économies** - "Économisez 50%" sur l'annuel
+- [x] **Garantie satisfait ou remboursé** - 14 jours visible
+- [x] **Badges de sécurité** - Paiement sécurisé, Apple Pay/Google Pay
+- [x] **Témoignages intégrés** - Social proof sur le paywall
+- [x] **Animation CTA** - Bouton avec gradient animé
+
 ### 🌍 Internationalisation
 - [x] Support multilingue (Français, Allemand, Italien)
 - [x] Sélection de la langue dans l'onboarding
 - [x] Traductions des interfaces principales
-
-### 💳 Abonnements (UI)
-- [x] Page Paywall avec plans d'abonnement
-- [x] Affichage des avantages Premium
-- [ ] ⚠️ Intégration RevenueCat (actuellement UI seulement)
 
 ---
 
@@ -80,17 +114,20 @@
 - [ ] **Intégration RevenueCat** - Gestion des abonnements réels
 - [ ] **Historique du poids** - Suivi de l'évolution avec graphique
 - [ ] **Correction de la mise à jour du profil** - Après exécution du script SQL
+- [ ] **Notifications push** - Rappels de repas et motivation
 
 ### Priorité Moyenne (P2)
 - [ ] **Mode sombre** - Thème alternatif pour l'application
 - [ ] **Détail d'un repas** - Vue détaillée lors du clic dans l'historique
 - [ ] **Statistiques avancées** - Moyennes hebdomadaires et mensuelles
+- [ ] **Scan de code-barres** - Pour les produits emballés
+- [ ] **Suggestions de recettes** - Basées sur les macros restants
 
 ### Priorité Basse (P3)
-- [ ] **Notifications/Rappels** - Rappels de repas personnalisables
-- [ ] **Export des données** - Export PDF ou CSV des statistiques
+- [ ] **Export PDF** - Rapport mensuel pour médecin/nutritionniste
+- [ ] **Mode hors-ligne** - Scanner sans internet
 - [ ] **Objectifs personnalisés** - Définir des objectifs par nutriment
-- [ ] **Recettes suggérées** - Suggestions basées sur les macros restants
+- [ ] **Leaderboard** - Classement anonyme par streak/score
 
 ---
 
@@ -100,8 +137,9 @@
 - **Framework**: Expo (React Native)
 - **Navigation**: Expo Router (file-based routing)
 - **État**: Zustand
+- **Animations**: React Native Reanimated
 - **i18n**: i18n-js
-- **UI**: Composants React Native natifs
+- **UI**: Composants React Native natifs + SVG
 
 ### Backend
 - **Framework**: FastAPI (Python)
@@ -110,10 +148,22 @@
 - **Stockage**: Supabase Storage (bucket "photo")
 - **IA**: API Anthropic Claude (analyse d'images)
 
-### Intégrations
-- **Supabase** - Auth, Database, Storage
-- **Claude API** - Analyse visuelle des repas
-- **RevenueCat** - Gestion des abonnements (à finaliser)
+### Composants Créés
+- `MascotAnimated.tsx` - Mascotte SVG animée
+- `Testimonials.tsx` - Carrousel de témoignages
+- `SocialProof.tsx` - Compteurs sociaux
+- `BadgeCard.tsx` - Carte de badge
+- `LevelProgress.tsx` - Barre de progression niveau
+- `WeeklyChallenge.tsx` - Carte de défi hebdomadaire
+- `WeeklyChart.tsx` - Graphique hebdomadaire
+
+### Hooks Créés
+- `useMascotController.ts` - Contrôle intelligent de la mascotte
+
+### Pages Créées
+- `/coach.tsx` - Chat avec le coach IA
+- `/achievements.tsx` - Page des succès et badges
+- `/paywall-new.tsx` - Paywall optimisé pour conversion
 
 ---
 
@@ -132,6 +182,8 @@ ANTHROPIC_API_KEY=your_claude_api_key
 
 # Frontend (.env)
 EXPO_PUBLIC_BACKEND_URL=your_backend_url
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 ---

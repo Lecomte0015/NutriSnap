@@ -6,3 +6,8 @@ export { MealCard } from './MealCard';
 export { Mascot } from './Mascot';
 export { MascotAnimated } from './MascotAnimated';
 export { WeeklyChart } from './WeeklyChart';
+export { Testimonials } from './Testimonials';
+export { SocialProof } from './SocialProof';
+export { BadgeCard } from './BadgeCard';
+export { LevelProgress } from './LevelProgress';
+export { WeeklyChallengeCard } from './WeeklyChallenge';

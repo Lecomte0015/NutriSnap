@@ -193,6 +193,32 @@ export default function ProfileScreen() {
         <Card style={styles.settingsCard}>
           <Text style={styles.sectionTitle}>{t('profile.settings')}</Text>
           
+          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/achievements')}>
+            <View style={styles.settingLeft}>
+              <Ionicons name="trophy-outline" size={20} color={COLORS.secondary} />
+              <Text style={styles.settingText}>Mes succès</Text>
+            </View>
+            <View style={styles.settingRight}>
+              <View style={styles.newBadge}>
+                <Text style={styles.newBadgeText}>NEW</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
+            </View>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/coach')}>
+            <View style={styles.settingLeft}>
+              <Ionicons name="chatbubbles-outline" size={20} color={COLORS.secondary} />
+              <Text style={styles.settingText}>Coach IA</Text>
+            </View>
+            <View style={styles.settingRight}>
+              <View style={styles.premiumBadge}>
+                <Text style={styles.premiumBadgeText}>PRO</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
+            </View>
+          </TouchableOpacity>
+          
           <TouchableOpacity style={styles.settingRow} onPress={handleLanguageChange}>
             <View style={styles.settingLeft}>
               <Ionicons name="language-outline" size={20} color={COLORS.secondary} />
@@ -206,7 +232,7 @@ export default function ProfileScreen() {
             </View>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/paywall')}>
+          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/paywall-new')}>
             <View style={styles.settingLeft}>
               <Ionicons name="diamond-outline" size={20} color={COLORS.secondary} />
               <Text style={styles.settingText}>{t('profile.subscription')}</Text>
@@ -412,5 +438,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textLight,
     marginTop: SPACING.lg,
+  },
+  newBadge: {
+    backgroundColor: COLORS.success,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  newBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: COLORS.textWhite,
+  },
+  premiumBadge: {
+    backgroundColor: COLORS.secondary,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  premiumBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: COLORS.textWhite,
   },
 });
