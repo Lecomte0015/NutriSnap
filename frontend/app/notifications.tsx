@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,19 +6,59 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/colors';
 import { Card, MascotAnimated } from '../src/components';
+import { notificationService, NotificationSettings } from '../src/services/notifications';
 
 export default function NotificationsScreen() {
   const router = useRouter();
-  const [mealReminders, setMealReminders] = React.useState(true);
-  const [dailyMotivation, setDailyMotivation] = React.useState(true);
-  const [streakAlerts, setStreakAlerts] = React.useState(true);
-  const [weeklyReport, setWeeklyReport] = React.useState(false);
+  const [settings, setSettings] = useState<NotificationSettings>({
+    mealReminders: true,
+    dailyMotivation: true,
+    streakAlerts: true,
+    weeklyReport: false,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    const savedSettings = await notificationService.getSettings();
+    setSettings(savedSettings);
+    setLoading(false);
+  };
+
+  const handleSettingChange = async (key: keyof NotificationSettings, value: boolean) => {
+    const newSettings = { ...settings, [key]: value };
+    setSettings(newSettings);
+    
+    try {
+      await notificationService.saveSettings(newSettings);
+      
+      if (value) {
+        Alert.alert('Active', 'Les notifications ont ete activees.');
+      }
+    } catch (error) {
+      Alert.alert('Erreur', 'Impossible de sauvegarder les parametres.');
+      // Revert
+      setSettings(settings);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    await notificationService.sendLocalNotification(
+      'Test de notification',
+      'Super ! Les notifications fonctionnent correctement.',
+      { type: 'test' }
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -39,7 +79,13 @@ export default function NotificationsScreen() {
           </Text>
         </View>
 
-        {/* Notification Settings */}
+        {/* Test Button */}
+        <TouchableOpacity style={styles.testButton} onPress={handleTestNotification}>
+          <Ionicons name="notifications" size={20} color={COLORS.secondary} />
+          <Text style={styles.testButtonText}>Tester les notifications</Text>
+        </TouchableOpacity>
+
+        {/* Meal Reminders */}
         <Card style={styles.card}>
           <Text style={styles.sectionTitle}>Rappels de repas</Text>
           
@@ -48,12 +94,12 @@ export default function NotificationsScreen() {
               <Ionicons name="restaurant-outline" size={24} color={COLORS.secondary} />
               <View style={styles.settingText}>
                 <Text style={styles.settingLabel}>Rappels de repas</Text>
-                <Text style={styles.settingDescription}>Petit-dejeuner, dejeuner et diner</Text>
+                <Text style={styles.settingDescription}>8h, 12h30 et 19h</Text>
               </View>
             </View>
             <Switch
-              value={mealReminders}
-              onValueChange={setMealReminders}
+              value={settings.mealReminders}
+              onValueChange={(value) => handleSettingChange('mealReminders', value)}
               trackColor={{ false: COLORS.border, true: COLORS.secondary }}
               thumbColor={COLORS.textWhite}
             />
@@ -64,18 +110,19 @@ export default function NotificationsScreen() {
               <Ionicons name="sunny-outline" size={24} color={COLORS.secondary} />
               <View style={styles.settingText}>
                 <Text style={styles.settingLabel}>Motivation quotidienne</Text>
-                <Text style={styles.settingDescription}>Un message chaque matin</Text>
+                <Text style={styles.settingDescription}>Un message chaque matin a 9h</Text>
               </View>
             </View>
             <Switch
-              value={dailyMotivation}
-              onValueChange={setDailyMotivation}
+              value={settings.dailyMotivation}
+              onValueChange={(value) => handleSettingChange('dailyMotivation', value)}
               trackColor={{ false: COLORS.border, true: COLORS.secondary }}
               thumbColor={COLORS.textWhite}
             />
           </View>
         </Card>
 
+        {/* Alerts */}
         <Card style={styles.card}>
           <Text style={styles.sectionTitle}>Alertes</Text>
           
@@ -88,8 +135,8 @@ export default function NotificationsScreen() {
               </View>
             </View>
             <Switch
-              value={streakAlerts}
-              onValueChange={setStreakAlerts}
+              value={settings.streakAlerts}
+              onValueChange={(value) => handleSettingChange('streakAlerts', value)}
               trackColor={{ false: COLORS.border, true: COLORS.secondary }}
               thumbColor={COLORS.textWhite}
             />
@@ -100,12 +147,12 @@ export default function NotificationsScreen() {
               <Ionicons name="bar-chart-outline" size={24} color={COLORS.secondary} />
               <View style={styles.settingText}>
                 <Text style={styles.settingLabel}>Rapport hebdomadaire</Text>
-                <Text style={styles.settingDescription}>Resume de ta semaine</Text>
+                <Text style={styles.settingDescription}>Resume de ta semaine le dimanche</Text>
               </View>
             </View>
             <Switch
-              value={weeklyReport}
-              onValueChange={setWeeklyReport}
+              value={settings.weeklyReport}
+              onValueChange={(value) => handleSettingChange('weeklyReport', value)}
               trackColor={{ false: COLORS.border, true: COLORS.secondary }}
               thumbColor={COLORS.textWhite}
             />
@@ -116,8 +163,25 @@ export default function NotificationsScreen() {
         <Card style={styles.infoCard}>
           <Ionicons name="information-circle-outline" size={24} color={COLORS.textSecondary} />
           <Text style={styles.infoText}>
-            Les notifications t'aident a rester sur la bonne voie. Tu peux les desactiver a tout moment.
+            Les notifications t'aident a rester sur la bonne voie. Tu peux les desactiver a tout moment dans les parametres de ton telephone.
           </Text>
+        </Card>
+
+        {/* Schedule Info */}
+        <Card style={styles.scheduleCard}>
+          <Text style={styles.scheduleTitle}>Horaires des rappels</Text>
+          <View style={styles.scheduleItem}>
+            <Text style={styles.scheduleTime}>08:00</Text>
+            <Text style={styles.scheduleMeal}>Petit-dejeuner</Text>
+          </View>
+          <View style={styles.scheduleItem}>
+            <Text style={styles.scheduleTime}>12:30</Text>
+            <Text style={styles.scheduleMeal}>Dejeuner</Text>
+          </View>
+          <View style={styles.scheduleItem}>
+            <Text style={styles.scheduleTime}>19:00</Text>
+            <Text style={styles.scheduleMeal}>Diner</Text>
+          </View>
         </Card>
       </ScrollView>
     </SafeAreaView>
@@ -153,13 +217,28 @@ const styles = StyleSheet.create({
   },
   mascotSection: {
     alignItems: 'center',
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   mascotText: {
     fontSize: 15,
     color: COLORS.textSecondary,
     marginTop: SPACING.sm,
     textAlign: 'center',
+  },
+  testButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.secondary + '15',
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.lg,
+    marginBottom: SPACING.md,
+  },
+  testButtonText: {
+    marginLeft: SPACING.sm,
+    color: COLORS.secondary,
+    fontSize: 15,
+    fontWeight: '600',
   },
   card: {
     marginBottom: SPACING.md,
@@ -199,7 +278,7 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: COLORS.secondary + '10',
   },
   infoText: {
@@ -208,5 +287,31 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginLeft: SPACING.sm,
     lineHeight: 20,
+  },
+  scheduleCard: {
+    marginTop: SPACING.md,
+  },
+  scheduleTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.md,
+  },
+  scheduleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  scheduleTime: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.secondary,
+    width: 60,
+  },
+  scheduleMeal: {
+    fontSize: 15,
+    color: COLORS.textPrimary,
   },
 });

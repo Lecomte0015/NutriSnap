@@ -243,6 +243,15 @@ export default function CameraScreen() {
         </View>
       </CameraView>
 
+      {/* Barcode Scanner Button */}
+      <TouchableOpacity 
+        style={styles.barcodeButton} 
+        onPress={() => router.push('/barcode-scanner')}
+      >
+        <Ionicons name="barcode-outline" size={24} color={COLORS.textWhite} />
+        <Text style={styles.barcodeButtonText}>Scanner code-barres</Text>
+      </TouchableOpacity>
+
       <View style={styles.controls}>
         <TouchableOpacity style={styles.galleryButton} onPress={pickImage}>
           <Ionicons name="images" size={28} color={COLORS.textWhite} />
@@ -438,5 +447,22 @@ const styles = StyleSheet.create({
   backButton: {
     marginTop: SPACING.md,
     width: '100%',
+  },
+  barcodeButton: {
+    position: 'absolute',
+    bottom: 140,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.round,
+  },
+  barcodeButtonText: {
+    color: COLORS.textWhite,
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: SPACING.sm,
   },
 });
