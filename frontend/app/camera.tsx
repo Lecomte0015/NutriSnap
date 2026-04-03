@@ -14,13 +14,15 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS } from '../src/constants/colors';
-import { Button, Mascot } from '../src/components';
+import { Button, MascotAnimated } from '../src/components';
 import { useStore } from '../src/store/useStore';
+import { useMascotController } from '../src/hooks/useMascotController';
 import i18n from '../src/i18n';
 
 export default function CameraScreen() {
   const router = useRouter();
-  const { user, profile, setMascotMood, setMascotMessage, isPremium, analysisCountToday, incrementAnalysisCount } = useStore();
+  const { user, profile, isPremium, analysisCountToday, incrementAnalysisCount } = useStore();
+  const { setThinking, resetToIdle } = useMascotController();
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<CameraType>('back');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -83,8 +85,7 @@ export default function CameraScreen() {
     }
 
     setAnalyzing(true);
-    setMascotMood('thinking');
-    setMascotMessage(t('mascot.analyzing'));
+    setThinking(); // Utilise le hook pour activer le mode thinking
 
     try {
       const response = await fetch(
@@ -133,7 +134,7 @@ export default function CameraScreen() {
       Alert.alert(t('common.error'), t('errors.network'));
     } finally {
       setAnalyzing(false);
-      setMascotMood('idle');
+      resetToIdle(); // Réinitialise la mascotte
     }
   };
 
@@ -155,7 +156,7 @@ export default function CameraScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.permissionContainer}>
-          <Mascot mood="sad" size={100} />
+          <MascotAnimated mood="sad" size={120} />
           <Text style={styles.permissionTitle}>{t('camera.permissionRequired')}</Text>
           <Text style={styles.permissionText}>{t('camera.permissionMessage')}</Text>
           <Button
@@ -191,7 +192,7 @@ export default function CameraScreen() {
 
           {analyzing && (
             <View style={styles.analyzingOverlay}>
-              <Mascot mood="thinking" size={100} />
+              <MascotAnimated mood="thinking" size={120} />
               <Text style={styles.analyzingText}>{t('camera.analyzing')}</Text>
               <ActivityIndicator size="large" color={COLORS.secondary} style={styles.loader} />
             </View>

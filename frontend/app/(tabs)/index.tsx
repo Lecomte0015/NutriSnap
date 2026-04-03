@@ -12,14 +12,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../src/constants/colors';
 import { useStore } from '../../src/store/useStore';
-import { CalorieRing, MacroBar, MealCard, Card, Mascot } from '../../src/components';
+import { CalorieRing, MacroBar, MealCard, Card, MascotAnimated, WeeklyChart } from '../../src/components';
 import i18n from '../../src/i18n';
 import { Meal, DailyStats, Streak } from '../../src/types';
+
+interface WeeklyStatsData {
+  date: string;
+  total_calories: number;
+}
 
 export default function DashboardScreen() {
   const router = useRouter();
   const { user, profile, todayMeals, setTodayMeals, dailyStats, setDailyStats, streak, setStreak, mascotMood, setMascotMood, mascotMessage, setMascotMessage } = useStore();
   const [refreshing, setRefreshing] = useState(false);
+  const [weeklyStats, setWeeklyStats] = useState<WeeklyStatsData[]>([]);
   const t = i18n.t.bind(i18n);
 
   const dailyGoal = profile?.daily_calories || 2000;
@@ -68,6 +74,15 @@ export default function DashboardScreen() {
           setMascotMood('idle');
           setMascotMessage(t('mascot.welcomeBack'));
         }
+      }
+
+      // Fetch weekly stats
+      const weeklyResponse = await fetch(
+        `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/stats/${user.id}/weekly`
+      );
+      if (weeklyResponse.ok) {
+        const weeklyData = await weeklyResponse.json();
+        setWeeklyStats(weeklyData.stats || []);
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -125,7 +140,7 @@ export default function DashboardScreen() {
         {/* Mascot Card */}
         <Card style={styles.mascotCard}>
           <View style={styles.mascotContent}>
-            <Mascot mood={mascotMood} size={80} />
+            <MascotAnimated mood={mascotMood} size={100} />
             <View style={styles.mascotTextContainer}>
               <Text style={styles.mascotMessage}>
                 {mascotMessage || t('mascot.welcomeBack')}
@@ -162,6 +177,9 @@ export default function DashboardScreen() {
               color={COLORS.fat}
             />
           </View>
+
+          {/* Weekly Chart */}
+          <WeeklyChart data={weeklyStats} goal={dailyGoal} />
         </Card>
 
         {/* Today's Meals */}

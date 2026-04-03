@@ -11,15 +11,17 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/colors';
-import { Button, Card, MacroBar, Mascot } from '../src/components';
+import { Button, Card, MacroBar, MascotAnimated } from '../src/components';
 import { useStore } from '../src/store/useStore';
+import { useMascotController } from '../src/hooks/useMascotController';
 import { AnalysisResult, MascotMood } from '../src/types';
 import i18n from '../src/i18n';
 
 export default function ResultScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { user, addMeal, setMascotMood, setMascotMessage } = useStore();
+  const { user, addMeal, mascotMood } = useStore();
+  const { triggerReaction } = useMascotController();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const hasUpdatedMascot = useRef(false);
@@ -30,30 +32,12 @@ export default function ResultScreen() {
     : null;
   const imageBase64 = params.image as string;
 
-  // Update mascot only once when component mounts
+  // Update mascot only once when component mounts - using the controller
   useEffect(() => {
     if (analysis && !hasUpdatedMascot.current) {
       hasUpdatedMascot.current = true;
-      
-      let mood: MascotMood;
-      let message: string;
-
-      if (analysis.score >= 8) {
-        mood = 'excited';
-        message = t('mascot.greatMeal');
-      } else if (analysis.score >= 6) {
-        mood = 'happy';
-        message = t('mascot.goodMeal');
-      } else if (analysis.score >= 4) {
-        mood = 'warning';
-        message = t('mascot.averageMeal');
-      } else {
-        mood = 'sad';
-        message = t('mascot.poorMeal');
-      }
-
-      setMascotMood(mood);
-      setMascotMessage(message);
+      // Trigger reaction with score - this uses the intelligent mascot controller
+      triggerReaction(analysis.score);
     }
   }, []);
 
@@ -128,7 +112,8 @@ export default function ResultScreen() {
   }
 
   const scoreColor = getScoreColor(analysis.score);
-  const mood: MascotMood = analysis.score >= 8 ? 'excited' : analysis.score >= 6 ? 'happy' : analysis.score >= 4 ? 'warning' : 'sad';
+  // Calculate mood from score for display in mascot
+  const displayMood: MascotMood = mascotMood || (analysis.score >= 8 ? 'excited' : analysis.score >= 6 ? 'happy' : analysis.score >= 4 ? 'warning' : 'sad');
 
   return (
     <SafeAreaView style={styles.container}>
@@ -169,7 +154,7 @@ export default function ResultScreen() {
         {/* Mascot Feedback */}
         <Card style={styles.feedbackCard}>
           <View style={styles.feedbackContent}>
-            <Mascot mood={mood} size={70} />
+            <MascotAnimated mood={displayMood} size={90} />
             <View style={styles.feedbackTextContainer}>
               <Text style={styles.feedbackText}>{analysis.feedback}</Text>
             </View>

@@ -1,0 +1,1 @@
+export { useMascotController } from './useMascotController';
