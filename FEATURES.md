@@ -27,11 +27,16 @@
 - [x] Resultats avec animations
 - [x] Sauvegarde en BDD
 
-### 4. Scanner Code-barres (NOUVEAU)
-- [x] Scan EAN13, EAN8, UPC
-- [x] Base de donnees produits (mock)
-- [x] Affichage infos nutritionnelles
-- [x] Score nutritionnel
+### 4. Scanner Code-barres
+- [x] Scan EAN13, EAN8, UPC, Code128, Code39
+- [x] **Integration Open Food Facts API** (API reelle)
+- [x] Header User-Agent configure
+- [x] Affichage image produit
+- [x] Infos nutritionnelles completes (calories, proteines, glucides, lipides, sucres, fibres, sel)
+- [x] Nutriscore avec couleurs officielles
+- [x] Affichage allergenes
+- [x] Score nutritionnel calcule
+- [x] Indicateur de chargement pendant la recherche
 - [x] Ajout au repas
 - [x] Haptic + vibration feedback
 
@@ -75,12 +80,15 @@
 - [x] Badges securite
 - [x] Temoignages integres
 
-### 11. RevenueCat Integration (NOUVEAU)
+### 11. RevenueCat Integration
 - [x] Service revenueCat.ts
+- [x] **Cle API configuree** (`sk_ZzZcZxFSbwPmdyzLRvOCHzzCmvKsw`)
+- [x] **Entitlement "NutriSnap Pro"**
 - [x] Gestion des offerings
 - [x] Achat de packages
 - [x] Restauration achats
 - [x] Verification premium
+- [x] Cache du statut premium
 
 ### 12. Notifications Push (NOUVEAU)
 - [x] Service notifications.ts
@@ -121,6 +129,7 @@
 |---------|---------|-------------|
 | RevenueCat | src/services/revenueCat.ts | Paiements in-app |
 | Notifications | src/services/notifications.ts | Push notifications |
+| **Open Food Facts** | **src/services/openFoodFacts.ts** | **API produits alimentaires** |
 
 ---
 
@@ -169,8 +178,9 @@ expo-linear-gradient
 - Configuration dans l'app via /notifications
 
 ### Scanner Code-barres
-- Base de donnees mock incluse
-- Pour production: integrer Open Food Facts API
+- Utilise l'API Open Food Facts (gratuite, communautaire)
+- Header User-Agent configure pour respecter les conditions d'utilisation
+- Supporte la recherche par code-barres ET par nom de produit
 
 ---
 

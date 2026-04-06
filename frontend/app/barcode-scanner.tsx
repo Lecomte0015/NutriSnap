@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   Alert,
   Vibration,
+  ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,96 +17,82 @@ import * as Haptics from 'expo-haptics';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/colors';
 import { Card, MascotAnimated } from '../src/components';
 import i18n from '../src/i18n';
-
-// Mock product database - In production, use Open Food Facts API or similar
-const MOCK_PRODUCTS: Record<string, any> = {
-  '3017620422003': {
-    name: 'Nutella 400g',
-    brand: 'Ferrero',
-    calories: 539,
-    protein: 6.3,
-    carbs: 57.5,
-    fat: 30.9,
-    sugar: 56.3,
-    fiber: 0,
-    score: 2,
-    image: 'https://images.openfoodfacts.org/images/products/301/762/042/2003/front_fr.400.jpg',
-  },
-  '3175680011480': {
-    name: 'Eau minerale Evian 1.5L',
-    brand: 'Evian',
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-    sugar: 0,
-    fiber: 0,
-    score: 10,
-    image: null,
-  },
-  '7622210449283': {
-    name: 'Oreo Original',
-    brand: 'Oreo',
-    calories: 480,
-    protein: 4.5,
-    carbs: 69,
-    fat: 20,
-    sugar: 38,
-    fiber: 2,
-    score: 3,
-    image: null,
-  },
-};
+import openFoodFactsService, { ProductData } from '../src/services/openFoodFacts';
 
 export default function BarcodeScannerScreen() {
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
-  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [product, setProduct] = useState<ProductData | null>(null);
   const t = i18n.t.bind(i18n);
 
   const handleBarcodeScanned = async ({ type, data }: BarcodeScanningResult) => {
-    if (scanned) return;
+    if (scanned || loading) return;
     
     setScanned(true);
+    setLoading(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Vibration.vibrate(100);
 
     console.log('Barcode scanned:', type, data);
 
-    // Look up product
-    const foundProduct = MOCK_PRODUCTS[data];
+    try {
+      // Call Open Food Facts API
+      const productData = await openFoodFactsService.getProduct(data);
 
-    if (foundProduct) {
-      setProduct({ ...foundProduct, barcode: data });
-    } else {
-      // In production, call Open Food Facts API
+      if (productData.found) {
+        setProduct(productData);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        Alert.alert(
+          'Produit non trouve',
+          `Code-barres: ${data}\n\nCe produit n'est pas encore dans la base Open Food Facts.`,
+          [
+            { text: 'Scanner un autre', onPress: () => {
+              setScanned(false);
+              setLoading(false);
+            }},
+            { text: 'Ajouter manuellement', onPress: () => handleAddProduct(data) },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error fetching product:', error);
       Alert.alert(
-        'Produit non trouve',
-        `Code-barres: ${data}\n\nCe produit n\'est pas encore dans notre base de donnees. Voulez-vous l\'ajouter ?`,
-        [
-          { text: 'Non', onPress: () => setScanned(false) },
-          { text: 'Oui', onPress: () => handleAddProduct(data) },
-        ]
+        'Erreur',
+        'Impossible de recuperer les informations du produit. Verifiez votre connexion internet.',
+        [{ text: 'OK', onPress: () => {
+          setScanned(false);
+          setLoading(false);
+        }}]
       );
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleAddProduct = (barcode: string) => {
-    // In production, open a form to add the product
-    Alert.alert('Bientot disponible', 'L\'ajout de produits sera disponible dans une prochaine mise a jour.');
-    setScanned(false);
+    Alert.alert(
+      'Contribution Open Food Facts',
+      'Vous pouvez ajouter ce produit sur openfoodfacts.org pour enrichir la base de donnees communautaire !',
+      [{ text: 'Compris', onPress: () => {
+        setScanned(false);
+        setLoading(false);
+      }}]
+    );
   };
 
-  const handleAddToMeal = () => {
+  const handleAddToMeal = async () => {
     if (!product) return;
 
     // Navigate back with product data
     router.back();
-    // In a real app, you would pass this data to the meal tracker
+    // Show success message with product details
     Alert.alert(
       'Produit ajoute',
-      `${product.name} a ete ajoute a votre repas.\n\nCalories: ${product.calories} kcal`
+      `${product.name} (${product.brand})\n\nCalories: ${product.calories} kcal\nProteines: ${product.protein}g\nGlucides: ${product.carbs}g\nLipides: ${product.fat}g`
     );
   };
 
@@ -117,6 +105,18 @@ export default function BarcodeScannerScreen() {
     if (score >= 7) return COLORS.success;
     if (score >= 4) return COLORS.warning;
     return COLORS.error;
+  };
+
+  const getNutriscoreColor = (grade: string | null) => {
+    if (!grade) return COLORS.textSecondary;
+    const colors: Record<string, string> = {
+      'a': '#038141',
+      'b': '#85BB2F',
+      'c': '#FECB02',
+      'd': '#EE8100',
+      'e': '#E63E11',
+    };
+    return colors[grade.toLowerCase()] || COLORS.textSecondary;
   };
 
   if (!permission) {
@@ -143,10 +143,23 @@ export default function BarcodeScannerScreen() {
     );
   }
 
+  // Loading state
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.secondary} />
+          <Text style={styles.loadingText}>Recherche du produit...</Text>
+          <MascotAnimated mood="thinking" size={100} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (product) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]}>
+        <View style={[styles.header, { position: 'relative', top: 0 }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
             <Ionicons name="close" size={28} color={COLORS.textPrimary} />
           </TouchableOpacity>
@@ -156,17 +169,41 @@ export default function BarcodeScannerScreen() {
 
         <View style={styles.productContainer}>
           <Card style={styles.productCard}>
+            {/* Product image */}
+            {product.image && (
+              <View style={styles.productImageContainer}>
+                <Image 
+                  source={{ uri: product.image }} 
+                  style={styles.productImage}
+                  resizeMode="contain"
+                />
+              </View>
+            )}
+
             <View style={styles.productHeader}>
               <View style={styles.productInfo}>
                 <Text style={styles.productBrand}>{product.brand}</Text>
                 <Text style={styles.productName}>{product.name}</Text>
                 <Text style={styles.productBarcode}>Code: {product.barcode}</Text>
+                {product.servingSize && (
+                  <Text style={styles.servingSize}>Portion: {product.servingSize}</Text>
+                )}
               </View>
-              <View style={[styles.scoreBadge, { backgroundColor: getScoreColor(product.score) }]}>
-                <Text style={styles.scoreText}>{product.score}/10</Text>
+              <View style={styles.scoreContainer}>
+                <View style={[styles.scoreBadge, { backgroundColor: getScoreColor(product.score) }]}>
+                  <Text style={styles.scoreText}>{product.score}/10</Text>
+                </View>
+                {product.nutriscoreGrade && (
+                  <View style={[styles.nutriscore, { backgroundColor: getNutriscoreColor(product.nutriscoreGrade) }]}>
+                    <Text style={styles.nutriscoreText}>
+                      {product.nutriscoreGrade.toUpperCase()}
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
 
+            {/* Main nutrition grid */}
             <View style={styles.nutritionGrid}>
               <View style={styles.nutritionItem}>
                 <Text style={styles.nutritionValue}>{product.calories}</Text>
@@ -186,6 +223,36 @@ export default function BarcodeScannerScreen() {
               </View>
             </View>
 
+            {/* Secondary nutrition info */}
+            <View style={styles.secondaryNutrition}>
+              <View style={styles.secondaryItem}>
+                <Text style={styles.secondaryLabel}>Sucres</Text>
+                <Text style={styles.secondaryValue}>{product.sugar}g</Text>
+              </View>
+              <View style={styles.secondaryItem}>
+                <Text style={styles.secondaryLabel}>Fibres</Text>
+                <Text style={styles.secondaryValue}>{product.fiber}g</Text>
+              </View>
+              <View style={styles.secondaryItem}>
+                <Text style={styles.secondaryLabel}>Sel</Text>
+                <Text style={styles.secondaryValue}>{product.salt}g</Text>
+              </View>
+            </View>
+
+            {/* Allergens */}
+            {product.allergens && product.allergens.length > 0 && (
+              <View style={styles.allergensContainer}>
+                <View style={styles.allergensHeader}>
+                  <Ionicons name="alert-circle" size={18} color={COLORS.error} />
+                  <Text style={styles.allergensTitle}>Allergenes</Text>
+                </View>
+                <Text style={styles.allergensList}>
+                  {product.allergens.join(', ')}
+                </Text>
+              </View>
+            )}
+
+            {/* Sugar warning */}
             {product.sugar > 20 && (
               <View style={styles.warningBanner}>
                 <Ionicons name="warning" size={20} color={COLORS.warning} />
@@ -196,7 +263,7 @@ export default function BarcodeScannerScreen() {
 
           <MascotAnimated 
             mood={product.score >= 7 ? 'happy' : product.score >= 4 ? 'warning' : 'sad'} 
-            size={100} 
+            size={80} 
           />
           <Text style={styles.mascotMessage}>
             {product.score >= 7 
@@ -411,7 +478,7 @@ const styles = StyleSheet.create({
   },
   productCard: {
     width: '100%',
-    marginTop: 60,
+    marginTop: SPACING.md,
   },
   productHeader: {
     flexDirection: 'row',
@@ -522,5 +589,94 @@ const styles = StyleSheet.create({
     color: COLORS.textWhite,
     fontSize: 15,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xl,
+  },
+  loadingText: {
+    fontSize: 18,
+    color: COLORS.textPrimary,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.lg,
+  },
+  productImageContainer: {
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  productImage: {
+    width: 120,
+    height: 120,
+    borderRadius: BORDER_RADIUS.md,
+  },
+  servingSize: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  scoreContainer: {
+    alignItems: 'flex-end',
+    gap: SPACING.xs,
+  },
+  nutriscore: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
+    borderRadius: BORDER_RADIUS.sm,
+    minWidth: 30,
+    alignItems: 'center',
+  },
+  nutriscoreText: {
+    color: COLORS.textWhite,
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  secondaryNutrition: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: SPACING.md,
+    paddingTop: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  secondaryItem: {
+    alignItems: 'center',
+  },
+  secondaryLabel: {
+    fontSize: 11,
+    color: COLORS.textLight,
+  },
+  secondaryValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  allergensContainer: {
+    backgroundColor: COLORS.error + '10',
+    padding: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    marginTop: SPACING.md,
+  },
+  allergensHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  allergensTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.error,
+    marginLeft: SPACING.xs,
+  },
+  allergensList: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginLeft: 22,
   },
 });
