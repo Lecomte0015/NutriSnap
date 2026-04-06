@@ -8,11 +8,11 @@ import { Platform, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // RevenueCat API Keys - Replace with your actual keys
-const REVENUECAT_API_KEY_IOS = 'your_ios_api_key';
-const REVENUECAT_API_KEY_ANDROID = 'your_android_api_key';
+const REVENUECAT_API_KEY_IOS = 'sk_ZzZcZxFSbwPmdyzLRvOCHzzCmvKsw';
+const REVENUECAT_API_KEY_ANDROID = 'sk_ZzZcZxFSbwPmdyzLRvOCHzzCmvKsw';
 
 // Entitlement identifier
-const PREMIUM_ENTITLEMENT = 'premium';
+const PREMIUM_ENTITLEMENT = 'NutriSnap';
 
 class RevenueCatService {
   private isInitialized = false;
