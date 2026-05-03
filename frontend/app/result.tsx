@@ -6,38 +6,62 @@ import {
   ScrollView,
   Image,
   Alert,
+  TextInput,
+  TouchableOpacity,
+  Modal,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/colors';
+import { SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/colors';
+import { useColors } from '../src/hooks/useColors';
 import { Button, Card, MacroBar, MascotAnimated } from '../src/components';
+import { Celebration } from '../src/components/Celebration';
 import { useStore } from '../src/store/useStore';
 import { useMascotController } from '../src/hooks/useMascotController';
 import { AnalysisResult, MascotMood } from '../src/types';
-import i18n from '../src/i18n';
+import { useTranslation } from '../src/hooks/useTranslation';
 
 export default function ResultScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { user, addMeal, mascotMood } = useStore();
+  const COLORS = useColors();
+  const { user, profile, addMeal, addXp, mascotMood } = useStore();
   const { triggerReaction } = useMascotController();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const hasUpdatedMascot = useRef(false);
-  const t = i18n.t.bind(i18n);
+  const t = useTranslation();
 
-  const analysis: AnalysisResult | null = params.analysis
+  const rawAnalysis: AnalysisResult | null = params.analysis
     ? JSON.parse(params.analysis as string)
     : null;
   const imageBase64 = params.image as string;
 
-  // Update mascot only once when component mounts - using the controller
+  const [editedCalories, setEditedCalories] = useState(rawAnalysis?.calories?.toString() || '');
+  const [editedProtein, setEditedProtein] = useState(rawAnalysis?.macros?.protein?.toString() || '');
+  const [editedCarbs, setEditedCarbs] = useState(rawAnalysis?.macros?.carbs?.toString() || '');
+  const [editedFat, setEditedFat] = useState(rawAnalysis?.macros?.fat?.toString() || '');
+
+  const analysis: AnalysisResult | null = rawAnalysis ? {
+    ...rawAnalysis,
+    calories: parseInt(editedCalories) || rawAnalysis.calories,
+    macros: {
+      protein: parseFloat(editedProtein) || rawAnalysis.macros.protein,
+      carbs: parseFloat(editedCarbs) || rawAnalysis.macros.carbs,
+      fat: parseFloat(editedFat) || rawAnalysis.macros.fat,
+    },
+  } : null;
+
   useEffect(() => {
     if (analysis && !hasUpdatedMascot.current) {
       hasUpdatedMascot.current = true;
-      // Trigger reaction with score - this uses the intelligent mascot controller
-      triggerReaction(analysis.score);
+      triggerReaction(analysis.score, profile);
+      if (analysis.score >= 8) {
+        setTimeout(() => setShowCelebration(true), 600);
+      }
     }
   }, []);
 
@@ -83,18 +107,37 @@ export default function ResultScreen() {
         const data = await response.json();
         addMeal(data.meal);
         setSaved(true);
+
+        // Award XP based on score
+        const xpGained = analysis.score >= 8 ? 30 : analysis.score >= 6 ? 20 : 10;
+        addXp(xpGained);
+
         Alert.alert(
           t('common.success'),
-          'Repas enregistré avec succès !',
-          [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
+          t('analysis.savedXp', { xp: xpGained }),
+          [{ text: t('common.done'), onPress: () => router.replace('/(tabs)') }]
         );
       } else {
         const error = await response.json();
-        Alert.alert(t('common.error'), error.detail || t('errors.generic'));
+        Alert.alert(
+          t('common.error'),
+          error.detail || t('errors.generic'),
+          [
+            { text: t('errors.tryAgain'), onPress: saveMeal },
+            { text: t('common.cancel'), style: 'cancel' },
+          ]
+        );
       }
     } catch (error) {
       console.error('Error saving meal:', error);
-      Alert.alert(t('common.error'), t('errors.network'));
+      Alert.alert(
+        t('common.error'),
+        t('errors.network'),
+        [
+          { text: 'Réessayer', onPress: saveMeal },
+          { text: 'Annuler', style: 'cancel' },
+        ]
+      );
     } finally {
       setSaving(false);
     }
@@ -102,9 +145,9 @@ export default function ResultScreen() {
 
   if (!analysis) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{t('errors.generic')}</Text>
+          <Text style={[styles.errorText, { color: COLORS.textSecondary }]}>{t('errors.generic')}</Text>
           <Button title={t('common.back')} onPress={() => router.back()} />
         </View>
       </SafeAreaView>
@@ -112,18 +155,41 @@ export default function ResultScreen() {
   }
 
   const scoreColor = getScoreColor(analysis.score);
-  // Calculate mood from score for display in mascot
-  const displayMood: MascotMood = mascotMood || (analysis.score >= 8 ? 'excited' : analysis.score >= 6 ? 'happy' : analysis.score >= 4 ? 'warning' : 'sad');
+  const displayMood: MascotMood = mascotMood || (
+    analysis.score > 9 ? 'celebrating' :
+    analysis.score >= 8 ? 'excited' :
+    analysis.score >= 6 ? 'happy' :
+    analysis.score >= 4 ? 'warning' : 'sad'
+  );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]}>
+      {/* Confettis sur les bons scores */}
+      <Celebration
+        trigger={showCelebration}
+        onComplete={() => setShowCelebration(false)}
+      />
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>{t('analysis.result')}</Text>
+          <Text style={[styles.title, { color: COLORS.textPrimary }]}>{t('analysis.result')}</Text>
+          <TouchableOpacity
+            style={styles.editToggle}
+            onPress={() => setEditMode(!editMode)}
+          >
+            <Ionicons
+              name={editMode ? 'checkmark-circle' : 'pencil'}
+              size={22}
+              color={editMode ? COLORS.success : COLORS.textSecondary}
+            />
+            <Text style={[styles.editToggleText, { color: COLORS.textSecondary }, editMode && { color: COLORS.success }]}>
+              {editMode ? t('analysis.validate') : t('analysis.correct')}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Image Preview */}
@@ -141,12 +207,12 @@ export default function ResultScreen() {
         <Card style={styles.scoreCard}>
           <View style={styles.scoreHeader}>
             <View style={[styles.scoreBadge, { backgroundColor: scoreColor }]}>
-              <Text style={styles.scoreValue}>{analysis.score}</Text>
+              <Text style={styles.scoreValue}>{rawAnalysis?.score}</Text>
               <Text style={styles.scoreMax}>/10</Text>
             </View>
             <View style={styles.scoreInfo}>
-              <Text style={styles.scoreLabel}>{getScoreLabel(analysis.score)}</Text>
-              <Text style={styles.scoreSubtext}>{t('analysis.score')}</Text>
+              <Text style={[styles.scoreLabel, { color: COLORS.textPrimary }]}>{getScoreLabel(rawAnalysis?.score || 0)}</Text>
+              <Text style={[styles.scoreSubtext, { color: COLORS.textSecondary }]}>{t('analysis.score')}</Text>
             </View>
           </View>
         </Card>
@@ -156,52 +222,102 @@ export default function ResultScreen() {
           <View style={styles.feedbackContent}>
             <MascotAnimated mood={displayMood} size={90} />
             <View style={styles.feedbackTextContainer}>
-              <Text style={styles.feedbackText}>{analysis.feedback}</Text>
+              <Text style={[styles.feedbackText, { color: COLORS.textPrimary }]}>{analysis.feedback}</Text>
             </View>
           </View>
         </Card>
 
         {/* Foods Detected */}
         <Card style={styles.foodsCard}>
-          <Text style={styles.sectionTitle}>{t('analysis.detected')}</Text>
+          <Text style={[styles.sectionTitle, { color: COLORS.textPrimary }]}>{t('analysis.detected')}</Text>
           <View style={styles.foodsList}>
             {analysis.foods.map((food, index) => (
               <View key={index} style={styles.foodItem}>
                 <Ionicons name="checkmark-circle" size={20} color={COLORS.secondary} />
-                <Text style={styles.foodText}>{food}</Text>
+                <Text style={[styles.foodText, { color: COLORS.textPrimary }]}>{food}</Text>
               </View>
             ))}
           </View>
         </Card>
 
-        {/* Macros Card */}
+        {/* Macros Card — éditable */}
         <Card style={styles.macrosCard}>
-          <Text style={styles.sectionTitle}>{t('analysis.macros')}</Text>
-          
-          <View style={styles.caloriesRow}>
-            <Ionicons name="flame" size={24} color={COLORS.warning} />
-            <Text style={styles.caloriesValue}>{analysis.calories}</Text>
-            <Text style={styles.caloriesUnit}>kcal</Text>
-          </View>
+          <Text style={[styles.sectionTitle, { color: COLORS.textPrimary }]}>{t('analysis.macros')}</Text>
 
-          <MacroBar
-            label={t('dashboard.protein')}
-            value={analysis.macros.protein}
-            max={100}
-            color={COLORS.protein}
-          />
-          <MacroBar
-            label={t('dashboard.carbs')}
-            value={analysis.macros.carbs}
-            max={200}
-            color={COLORS.carbs}
-          />
-          <MacroBar
-            label={t('dashboard.fat')}
-            value={analysis.macros.fat}
-            max={80}
-            color={COLORS.fat}
-          />
+          {editMode ? (
+            <View style={styles.editGrid}>
+              <View style={[styles.editItem, { backgroundColor: COLORS.background, borderColor: COLORS.border }]}>
+                <Text style={[styles.editLabel, { color: COLORS.textSecondary }]}>{t('dashboard.calories')}</Text>
+                <TextInput
+                  style={[styles.editInput, { color: COLORS.textPrimary }]}
+                  value={editedCalories}
+                  onChangeText={setEditedCalories}
+                  keyboardType="numeric"
+                  selectTextOnFocus
+                />
+                <Text style={[styles.editUnit, { color: COLORS.textSecondary }]}>kcal</Text>
+              </View>
+              <View style={[styles.editItem, { backgroundColor: COLORS.background, borderColor: COLORS.border }]}>
+                <Text style={[styles.editLabel, { color: COLORS.textSecondary }]}>{t('dashboard.protein')}</Text>
+                <TextInput
+                  style={[styles.editInput, { color: COLORS.textPrimary }]}
+                  value={editedProtein}
+                  onChangeText={setEditedProtein}
+                  keyboardType="decimal-pad"
+                  selectTextOnFocus
+                />
+                <Text style={[styles.editUnit, { color: COLORS.textSecondary }]}>g</Text>
+              </View>
+              <View style={[styles.editItem, { backgroundColor: COLORS.background, borderColor: COLORS.border }]}>
+                <Text style={[styles.editLabel, { color: COLORS.textSecondary }]}>{t('dashboard.carbs')}</Text>
+                <TextInput
+                  style={[styles.editInput, { color: COLORS.textPrimary }]}
+                  value={editedCarbs}
+                  onChangeText={setEditedCarbs}
+                  keyboardType="decimal-pad"
+                  selectTextOnFocus
+                />
+                <Text style={[styles.editUnit, { color: COLORS.textSecondary }]}>g</Text>
+              </View>
+              <View style={[styles.editItem, { backgroundColor: COLORS.background, borderColor: COLORS.border }]}>
+                <Text style={[styles.editLabel, { color: COLORS.textSecondary }]}>{t('dashboard.fat')}</Text>
+                <TextInput
+                  style={[styles.editInput, { color: COLORS.textPrimary }]}
+                  value={editedFat}
+                  onChangeText={setEditedFat}
+                  keyboardType="decimal-pad"
+                  selectTextOnFocus
+                />
+                <Text style={[styles.editUnit, { color: COLORS.textSecondary }]}>g</Text>
+              </View>
+            </View>
+          ) : (
+            <>
+              <View style={styles.caloriesRow}>
+                <Ionicons name="flame" size={24} color={COLORS.warning} />
+                <Text style={[styles.caloriesValue, { color: COLORS.textPrimary }]}>{analysis.calories}</Text>
+                <Text style={[styles.caloriesUnit, { color: COLORS.textSecondary }]}>kcal</Text>
+              </View>
+              <MacroBar
+                label={t('dashboard.protein')}
+                value={analysis.macros.protein}
+                max={100}
+                color={COLORS.protein}
+              />
+              <MacroBar
+                label={t('dashboard.carbs')}
+                value={analysis.macros.carbs}
+                max={200}
+                color={COLORS.carbs}
+              />
+              <MacroBar
+                label={t('dashboard.fat')}
+                value={analysis.macros.fat}
+                max={80}
+                color={COLORS.fat}
+              />
+            </>
+          )}
         </Card>
 
         {/* Actions */}
@@ -228,19 +344,29 @@ export default function ResultScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   scrollContent: {
     padding: SPACING.md,
     paddingBottom: SPACING.xxl,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: SPACING.md,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
+  },
+  editToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    padding: SPACING.sm,
+  },
+  editToggleText: {
+    fontSize: 14,
   },
   imageContainer: {
     height: 200,
@@ -271,7 +397,7 @@ const styles = StyleSheet.create({
   scoreValue: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: COLORS.textWhite,
+    color: '#FFFFFF',
   },
   scoreMax: {
     fontSize: 16,
@@ -284,11 +410,9 @@ const styles = StyleSheet.create({
   scoreLabel: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
   },
   scoreSubtext: {
     fontSize: 14,
-    color: COLORS.textSecondary,
   },
   feedbackCard: {
     marginBottom: SPACING.md,
@@ -303,7 +427,6 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     fontSize: 15,
-    color: COLORS.textPrimary,
     lineHeight: 22,
   },
   foodsCard: {
@@ -312,7 +435,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.textPrimary,
     marginBottom: SPACING.sm,
   },
   foodsList: {
@@ -324,7 +446,6 @@ const styles = StyleSheet.create({
   },
   foodText: {
     fontSize: 15,
-    color: COLORS.textPrimary,
     marginLeft: SPACING.sm,
     textTransform: 'capitalize',
   },
@@ -343,13 +464,38 @@ const styles = StyleSheet.create({
   caloriesValue: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
     marginLeft: SPACING.sm,
   },
   caloriesUnit: {
     fontSize: 16,
-    color: COLORS.textSecondary,
     marginLeft: SPACING.xs,
+  },
+  editGrid: {
+    gap: SPACING.sm,
+  },
+  editItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: BORDER_RADIUS.sm,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderWidth: 1,
+  },
+  editLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  editInput: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'right',
+    minWidth: 60,
+  },
+  editUnit: {
+    fontSize: 13,
+    marginLeft: 4,
+    width: 30,
   },
   actions: {
     flexDirection: 'row',
@@ -366,7 +512,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: COLORS.textSecondary,
     marginBottom: SPACING.lg,
   },
 });

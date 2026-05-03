@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import * as Haptics from 'expo-haptics';
+import { useStore } from '../store/useStore';
 
 const { width, height } = Dimensions.get('window');
 
@@ -17,11 +18,11 @@ export const Celebration: React.FC<CelebrationProps> = ({
   type = 'confetti',
 }) => {
   const confettiRef = useRef<any>(null);
+  const { hapticsEnabled } = useStore();
 
   useEffect(() => {
     if (trigger && confettiRef.current) {
-      // Haptic feedback
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (hapticsEnabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       confettiRef.current.start();
     }
   }, [trigger]);
@@ -29,7 +30,7 @@ export const Celebration: React.FC<CelebrationProps> = ({
   if (!trigger) return null;
 
   return (
-    <View style={styles.container} pointerEvents="none">
+    <View style={[styles.container, { pointerEvents: 'none' }]}>
       <ConfettiCannon
         ref={confettiRef}
         count={150}

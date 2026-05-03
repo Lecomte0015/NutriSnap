@@ -1,9 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
-import { COLORS, SPACING, BORDER_RADIUS } from '../constants/colors';
+import { SPACING } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
+import { useTranslation } from '../hooks/useTranslation';
+import i18n from '../i18n';
+import { format } from 'date-fns';
+import { fr, de, it, enUS } from 'date-fns/locale';
 
 const { width } = Dimensions.get('window');
+const DATE_LOCALES: Record<string, Locale> = { fr, de, it, en: enUS };
 
 interface WeeklyChartProps {
   data: Array<{
@@ -13,10 +19,11 @@ interface WeeklyChartProps {
   goal: number;
 }
 
-const DAYS_SHORT = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-
 export const WeeklyChart: React.FC<WeeklyChartProps> = ({ data, goal }) => {
-  // Get last 7 days
+  const COLORS = useColors();
+  const t = useTranslation();
+  const dateLocale = DATE_LOCALES[i18n.locale] || fr;
+
   const today = new Date();
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const date = new Date(today);
@@ -24,19 +31,18 @@ export const WeeklyChart: React.FC<WeeklyChartProps> = ({ data, goal }) => {
     return date.toISOString().split('T')[0];
   });
 
-  // Map data to chart format
-  const chartData = last7Days.map((date, index) => {
+  const chartData = last7Days.map((date) => {
     const dayData = data.find(d => d.date === date);
     const calories = dayData?.total_calories || 0;
     const isOverGoal = calories > goal;
-    
+
     return {
       value: calories,
-      label: DAYS_SHORT[(new Date(date).getDay() + 6) % 7], // Adjust for Monday start
+      label: format(new Date(date + 'T12:00:00'), 'EEE', { locale: dateLocale }),
       frontColor: isOverGoal ? COLORS.warning : COLORS.secondary,
       topLabelComponent: () => (
         calories > 0 ? (
-          <Text style={styles.topLabel}>{calories}</Text>
+          <Text style={[styles.topLabel, { color: COLORS.textSecondary }]}>{calories}</Text>
         ) : null
       ),
     };
@@ -46,7 +52,7 @@ export const WeeklyChart: React.FC<WeeklyChartProps> = ({ data, goal }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Cette semaine</Text>
+      <Text style={[styles.title, { color: COLORS.textPrimary }]}>{t('chart.thisWeek')}</Text>
       <View style={styles.chartContainer}>
         <BarChart
           data={chartData}
@@ -57,8 +63,8 @@ export const WeeklyChart: React.FC<WeeklyChartProps> = ({ data, goal }) => {
           hideRules
           xAxisThickness={0}
           yAxisThickness={0}
-          yAxisTextStyle={styles.yAxisText}
-          xAxisLabelTextStyle={styles.xAxisText}
+          yAxisTextStyle={{ fontSize: 10, color: COLORS.textLight }}
+          xAxisLabelTextStyle={{ fontSize: 11, color: COLORS.textSecondary }}
           noOfSections={4}
           maxValue={maxValue}
           showReferenceLine1
@@ -77,15 +83,15 @@ export const WeeklyChart: React.FC<WeeklyChartProps> = ({ data, goal }) => {
       <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: COLORS.secondary }]} />
-          <Text style={styles.legendText}>Sous l'objectif</Text>
+          <Text style={[styles.legendText, { color: COLORS.textSecondary }]}>{t('chart.belowGoal')}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: COLORS.warning }]} />
-          <Text style={styles.legendText}>Au-dessus</Text>
+          <Text style={[styles.legendText, { color: COLORS.textSecondary }]}>{t('chart.aboveGoal')}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendLine, { backgroundColor: COLORS.error }]} />
-          <Text style={styles.legendText}>Objectif ({goal})</Text>
+          <Text style={[styles.legendText, { color: COLORS.textSecondary }]}>{t('chart.goal')} ({goal})</Text>
         </View>
       </View>
     </View>
@@ -99,7 +105,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.textPrimary,
     marginBottom: SPACING.md,
   },
   chartContainer: {
@@ -107,16 +112,7 @@ const styles = StyleSheet.create({
   },
   topLabel: {
     fontSize: 10,
-    color: COLORS.textSecondary,
     marginBottom: 2,
-  },
-  yAxisText: {
-    fontSize: 10,
-    color: COLORS.textLight,
-  },
-  xAxisText: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
   },
   legend: {
     flexDirection: 'row',
@@ -142,7 +138,6 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 11,
-    color: COLORS.textSecondary,
   },
 });
 

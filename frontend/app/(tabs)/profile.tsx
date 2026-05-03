@@ -1,76 +1,63 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
+  Modal,
   Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../src/constants/colors';
+import { SPACING, BORDER_RADIUS } from '../../src/constants/colors';
 import { useStore } from '../../src/store/useStore';
+import { useColors } from '../../src/hooks/useColors';
 import { Card, Button } from '../../src/components';
 import { supabase } from '../../src/lib/supabase';
-import i18n from '../../src/i18n';
+import { useTranslation } from '../../src/hooks/useTranslation';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, profile, subscription, setLanguage, reset } = useStore();
-  const t = i18n.t.bind(i18n);
+  const COLORS = useColors();
+  const { user, profile, subscription, language, setLanguage, reset } = useStore();
+  const t = useTranslation();
+  const [showLanguagePicker, setShowLanguagePicker] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const handleLogout = async () => {
-    Alert.alert(
-      t('auth.logout'),
-      'Voulez-vous vraiment vous déconnecter ?',
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.yes'),
-          style: 'destructive',
-          onPress: async () => {
-            await supabase.auth.signOut();
-            reset();
-            router.replace('/(auth)/welcome');
-          },
-        },
-      ]
-    );
+  const handleLanguageChange = async (code: 'en' | 'fr' | 'de' | 'it') => {
+    setLanguage(code);
+    setShowLanguagePicker(false);
+    // Persist to backend so profile stays in sync
+    if (user) {
+      fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/profiles/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ language: code }),
+      }).catch(() => {});
+    }
   };
 
-  const handleLanguageChange = () => {
-    Alert.alert(
-      t('settings.language'),
-      'Choisissez votre langue',
-      [
-        {
-          text: 'Français',
-          onPress: () => {
-            i18n.locale = 'fr';
-            setLanguage('fr');
-          },
-        },
-        {
-          text: 'Deutsch',
-          onPress: () => {
-            i18n.locale = 'de';
-            setLanguage('de');
-          },
-        },
-        {
-          text: 'Italiano',
-          onPress: () => {
-            i18n.locale = 'it';
-            setLanguage('it');
-          },
-        },
-        { text: t('common.cancel'), style: 'cancel' },
-      ]
-    );
+  const handleLogout = () => {
+    setShowLogoutModal(true);
   };
+
+  const confirmLogout = () => {
+    setShowLogoutModal(false);
+    // Clear local state immediately — don't wait for network
+    reset();
+    router.replace('/(auth)/welcome');
+    // Fire signOut in background (best-effort, non-blocking)
+    supabase.auth.signOut().catch(() => {});
+  };
+
+  const LANGUAGES = [
+    { code: 'en', label: 'English', flag: '🇬🇧' },
+    { code: 'fr', label: 'Français', flag: '🇫🇷' },
+    { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+    { code: 'it', label: 'Italiano', flag: '🇮🇹' },
+  ] as const;
 
   const getGoalText = (goal: string) => {
     switch (goal) {
@@ -82,192 +69,190 @@ export default function ProfileScreen() {
   };
 
   const getSubscriptionStatus = () => {
-    if (!subscription) return { text: 'Gratuit', color: COLORS.textSecondary };
-    if (subscription.status === 'trial') return { text: 'Essai gratuit', color: COLORS.success };
-    if (subscription.status === 'active') return { text: 'Premium', color: COLORS.secondary };
-    return { text: 'Expiré', color: COLORS.error };
+    if (!subscription) return { text: t('profile.gratuit'), color: COLORS.textSecondary };
+    if (subscription.status === 'trial') return { text: t('profile.essaiGratuit'), color: COLORS.success };
+    if (subscription.status === 'active') return { text: t('profile.premium'), color: COLORS.secondary };
+    return { text: t('profile.expire'), color: COLORS.error };
   };
 
   const subscriptionStatus = getSubscriptionStatus();
 
-  // Get display name
   const getDisplayName = () => {
-    if (profile?.first_name) {
-      return profile.first_name;
-    }
-    // Fallback to email username
-    return user?.email?.split('@')[0] || 'Utilisateur';
+    if (profile?.first_name) return profile.first_name;
+    return user?.email?.split('@')[0] || t('dialogs.user');
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>{t('profile.title')}</Text>
+          <Text style={[styles.title, { color: COLORS.textPrimary }]}>{t('profile.title')}</Text>
         </View>
 
         {/* Profile Card */}
         <Card style={styles.profileCard}>
           <View style={styles.profileHeader}>
-            {/* Profile Photo */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.avatarContainer}
               onPress={() => router.push('/edit-profile')}
             >
               {profile?.photo_url ? (
-                <Image
-                  source={{ uri: profile.photo_url }}
-                  style={styles.avatar}
-                />
+                <Image source={{ uri: profile.photo_url }} style={styles.avatar} />
               ) : (
-                <View style={styles.avatarPlaceholder}>
+                <View style={[styles.avatarPlaceholder, { backgroundColor: COLORS.border }]}>
                   <Ionicons name="person" size={40} color={COLORS.textLight} />
                 </View>
               )}
-              <View style={styles.editIconContainer}>
-                <Ionicons name="pencil" size={12} color={COLORS.textWhite} />
+              <View style={[styles.editIconContainer, { backgroundColor: COLORS.secondary, borderColor: COLORS.cardBackground }]}>
+                <Ionicons name="pencil" size={12} color="#FFFFFF" />
               </View>
             </TouchableOpacity>
-            
+
             <View style={styles.profileInfo}>
-              <Text style={styles.userName}>{getDisplayName()}</Text>
+              <Text style={[styles.userName, { color: COLORS.textPrimary }]}>{getDisplayName()}</Text>
               {profile?.last_name && (
-                <Text style={styles.userLastName}>{profile.last_name}</Text>
+                <Text style={[styles.userLastName, { color: COLORS.textSecondary }]}>{profile.last_name}</Text>
               )}
               <View style={[styles.subscriptionBadge, { backgroundColor: subscriptionStatus.color }]}>
                 <Text style={styles.subscriptionText}>{subscriptionStatus.text}</Text>
               </View>
             </View>
           </View>
-          
-          {/* Edit Profile Button */}
-          <TouchableOpacity 
-            style={styles.editProfileButton}
+
+          <TouchableOpacity
+            style={[styles.editProfileButton, { backgroundColor: COLORS.background }]}
             onPress={() => router.push('/edit-profile')}
           >
             <Ionicons name="create-outline" size={18} color={COLORS.secondary} />
-            <Text style={styles.editProfileText}>Modifier le profil</Text>
+            <Text style={[styles.editProfileText, { color: COLORS.secondary }]}>{t('profile.editProfile')}</Text>
           </TouchableOpacity>
         </Card>
 
         {/* Personal Info */}
         <Card style={styles.infoCard}>
-          <Text style={styles.sectionTitle}>{t('profile.personalInfo')}</Text>
-          
-          <View style={styles.infoRow}>
-            <Ionicons name="calendar-outline" size={20} color={COLORS.textSecondary} />
-            <Text style={styles.infoLabel}>{t('onboarding.age')}</Text>
-            <Text style={styles.infoValue}>{profile?.age || '-'} {t('onboarding.ageUnit')}</Text>
-          </View>
-          
-          <View style={styles.infoRow}>
-            <Ionicons name="fitness-outline" size={20} color={COLORS.textSecondary} />
-            <Text style={styles.infoLabel}>{t('onboarding.weight')}</Text>
-            <Text style={styles.infoValue}>{profile?.weight || '-'} {t('onboarding.weightUnit')}</Text>
-          </View>
-          
-          <View style={styles.infoRow}>
-            <Ionicons name="resize-outline" size={20} color={COLORS.textSecondary} />
-            <Text style={styles.infoLabel}>{t('onboarding.height')}</Text>
-            <Text style={styles.infoValue}>{profile?.height || '-'} {t('onboarding.heightUnit')}</Text>
-          </View>
-          
-          <View style={styles.infoRow}>
-            <Ionicons name="trophy-outline" size={20} color={COLORS.textSecondary} />
-            <Text style={styles.infoLabel}>{t('onboarding.goal')}</Text>
-            <Text style={styles.infoValue}>{getGoalText(profile?.goal || '')}</Text>
-          </View>
-          
-          <View style={styles.infoRow}>
-            <Ionicons name="flame-outline" size={20} color={COLORS.textSecondary} />
-            <Text style={styles.infoLabel}>{t('dashboard.calories')}</Text>
-            <Text style={styles.infoValue}>{profile?.daily_calories || '-'} kcal/jour</Text>
-          </View>
+          <Text style={[styles.sectionTitle, { color: COLORS.textPrimary }]}>{t('profile.personalInfo')}</Text>
+
+          {[
+            { icon: 'calendar-outline', label: t('onboarding.age'), value: `${profile?.age || '-'} ${t('onboarding.ageUnit')}` },
+            { icon: 'fitness-outline', label: t('onboarding.weight'), value: `${profile?.weight || '-'} ${t('onboarding.weightUnit')}` },
+            { icon: 'resize-outline', label: t('onboarding.height'), value: `${profile?.height || '-'} ${t('onboarding.heightUnit')}` },
+            { icon: 'trophy-outline', label: t('onboarding.goal'), value: getGoalText(profile?.goal || '') },
+            { icon: 'flame-outline', label: t('dashboard.calories'), value: `${profile?.daily_calories || '-'} kcal` },
+          ].map((row, i) => (
+            <View key={i} style={[styles.infoRow, { borderBottomColor: COLORS.border }]}>
+              <Ionicons name={row.icon as any} size={20} color={COLORS.textSecondary} />
+              <Text style={[styles.infoLabel, { color: COLORS.textSecondary }]}>{row.label}</Text>
+              <Text style={[styles.infoValue, { color: COLORS.textPrimary }]}>{row.value}</Text>
+            </View>
+          ))}
         </Card>
 
         {/* Settings */}
         <Card style={styles.settingsCard}>
-          <Text style={styles.sectionTitle}>{t('profile.settings')}</Text>
-          
-          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/achievements')}>
+          <Text style={[styles.sectionTitle, { color: COLORS.textPrimary }]}>{t('profile.settings')}</Text>
+
+          <TouchableOpacity style={[styles.settingRow, { borderBottomColor: COLORS.border }]} onPress={() => router.push('/achievements')}>
             <View style={styles.settingLeft}>
               <Ionicons name="trophy-outline" size={20} color={COLORS.secondary} />
-              <Text style={styles.settingText}>Mes succès</Text>
+              <Text style={[styles.settingText, { color: COLORS.textPrimary }]}>{t('profile.achievements')}</Text>
             </View>
             <View style={styles.settingRight}>
-              <View style={styles.newBadge}>
-                <Text style={styles.newBadgeText}>NEW</Text>
+              <View style={[styles.newBadge, { backgroundColor: COLORS.success }]}>
+                <Text style={styles.badgeText}>NEW</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
             </View>
           </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/coach')}>
+
+          <TouchableOpacity style={[styles.settingRow, { borderBottomColor: COLORS.border }]} onPress={() => router.push('/coach')}>
             <View style={styles.settingLeft}>
               <Ionicons name="chatbubbles-outline" size={20} color={COLORS.secondary} />
-              <Text style={styles.settingText}>Coach IA</Text>
+              <Text style={[styles.settingText, { color: COLORS.textPrimary }]}>{t('profile.aiCoach')}</Text>
             </View>
             <View style={styles.settingRight}>
-              <View style={styles.premiumBadge}>
-                <Text style={styles.premiumBadgeText}>PRO</Text>
+              <View style={[styles.newBadge, { backgroundColor: COLORS.secondary }]}>
+                <Text style={styles.badgeText}>PRO</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
             </View>
           </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/settings')}>
+
+          <TouchableOpacity style={[styles.settingRow, { borderBottomColor: COLORS.border }]} onPress={() => router.push('/settings')}>
             <View style={styles.settingLeft}>
               <Ionicons name="settings-outline" size={20} color={COLORS.secondary} />
-              <Text style={styles.settingText}>Parametres</Text>
+              <Text style={[styles.settingText, { color: COLORS.textPrimary }]}>{t('profile.editSettings')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
           </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.settingRow} onPress={handleLanguageChange}>
+
+          <TouchableOpacity
+            style={[styles.settingRow, { borderBottomColor: showLanguagePicker ? 'transparent' : COLORS.border }]}
+            onPress={() => setShowLanguagePicker(!showLanguagePicker)}
+          >
             <View style={styles.settingLeft}>
               <Ionicons name="language-outline" size={20} color={COLORS.secondary} />
-              <Text style={styles.settingText}>{t('settings.language')}</Text>
+              <Text style={[styles.settingText, { color: COLORS.textPrimary }]}>{t('settings.language')}</Text>
             </View>
             <View style={styles.settingRight}>
-              <Text style={styles.settingValue}>
-                {i18n.locale === 'fr' ? 'Français' : i18n.locale === 'de' ? 'Deutsch' : 'Italiano'}
+              <Text style={[styles.settingValue, { color: COLORS.textSecondary }]}>
+                {LANGUAGES.find(l => l.code === language)?.flag} {LANGUAGES.find(l => l.code === language)?.label}
               </Text>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
+              <Ionicons name={showLanguagePicker ? 'chevron-up' : 'chevron-forward'} size={20} color={COLORS.textLight} />
             </View>
           </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/paywall-new')}>
+          {showLanguagePicker && (
+            <View style={[styles.languagePicker, { borderBottomColor: COLORS.border }]}>
+              {LANGUAGES.map((lang) => (
+                <TouchableOpacity
+                  key={lang.code}
+                  style={[
+                    styles.languageOption,
+                    { backgroundColor: COLORS.background },
+                    language === lang.code && { backgroundColor: COLORS.secondary },
+                  ]}
+                  onPress={() => handleLanguageChange(lang.code)}
+                >
+                  <Text style={styles.languageFlag}>{lang.flag}</Text>
+                  <Text style={[styles.languageLabel, { color: language === lang.code ? '#FFFFFF' : COLORS.textPrimary }]}>
+                    {lang.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          <TouchableOpacity style={[styles.settingRow, { borderBottomColor: COLORS.border }]} onPress={() => router.push('/paywall-new')}>
             <View style={styles.settingLeft}>
               <Ionicons name="diamond-outline" size={20} color={COLORS.secondary} />
-              <Text style={styles.settingText}>{t('profile.subscription')}</Text>
+              <Text style={[styles.settingText, { color: COLORS.textPrimary }]}>{t('profile.subscription')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
           </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/notifications')}>
+
+          <TouchableOpacity style={[styles.settingRow, { borderBottomColor: COLORS.border }]} onPress={() => router.push('/notifications')}>
             <View style={styles.settingLeft}>
               <Ionicons name="notifications-outline" size={20} color={COLORS.secondary} />
-              <Text style={styles.settingText}>{t('settings.notifications')}</Text>
+              <Text style={[styles.settingText, { color: COLORS.textPrimary }]}>{t('settings.notifications')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
           </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/help')}>
+
+          <TouchableOpacity style={[styles.settingRow, { borderBottomColor: COLORS.border }]} onPress={() => router.push('/help')}>
             <View style={styles.settingLeft}>
               <Ionicons name="help-circle-outline" size={20} color={COLORS.secondary} />
-              <Text style={styles.settingText}>{t('profile.help')}</Text>
+              <Text style={[styles.settingText, { color: COLORS.textPrimary }]}>{t('profile.help')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
           </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/about')}>
+
+          <TouchableOpacity style={[styles.settingRow, { borderBottomColor: 'transparent' }]} onPress={() => router.push('/about')}>
             <View style={styles.settingLeft}>
               <Ionicons name="information-circle-outline" size={20} color={COLORS.secondary} />
-              <Text style={styles.settingText}>{t('profile.about')}</Text>
+              <Text style={[styles.settingText, { color: COLORS.textPrimary }]}>{t('profile.about')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
           </TouchableOpacity>
@@ -281,9 +266,37 @@ export default function ProfileScreen() {
           style={styles.logoutButton}
         />
 
-        {/* App Version */}
-        <Text style={styles.versionText}>NutriSnap v1.0.0</Text>
+        <Text style={[styles.versionText, { color: COLORS.textLight }]}>NutriSnap v1.0.0</Text>
       </ScrollView>
+
+      {/* Logout confirmation modal */}
+      <Modal
+        visible={showLogoutModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowLogoutModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalBox, { backgroundColor: COLORS.cardBackground }]}>
+            <Text style={[styles.modalTitle, { color: COLORS.textPrimary }]}>{t('dialogs.logoutTitle')}</Text>
+            <Text style={[styles.modalMessage, { color: COLORS.textSecondary }]}>{t('dialogs.logoutMsg')}</Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnCancel, { borderColor: COLORS.border }]}
+                onPress={() => setShowLogoutModal(false)}
+              >
+                <Text style={[styles.modalBtnText, { color: COLORS.textPrimary }]}>{t('common.cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnConfirm, { backgroundColor: COLORS.error }]}
+                onPress={confirmLogout}
+              >
+                <Text style={[styles.modalBtnText, { color: '#FFFFFF' }]}>{t('common.yes')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -291,7 +304,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   scrollContent: {
     padding: SPACING.md,
@@ -303,7 +315,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
   },
   profileCard: {
     marginBottom: SPACING.md,
@@ -324,7 +335,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: COLORS.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -335,11 +345,9 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: COLORS.secondary,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: COLORS.cardBackground,
   },
   profileInfo: {
     flex: 1,
@@ -348,11 +356,9 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
   },
   userLastName: {
     fontSize: 16,
-    color: COLORS.textSecondary,
     marginTop: 2,
   },
   subscriptionBadge: {
@@ -365,7 +371,7 @@ const styles = StyleSheet.create({
   subscriptionText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.textWhite,
+    color: '#FFFFFF',
   },
   editProfileButton: {
     flexDirection: 'row',
@@ -373,12 +379,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: SPACING.md,
     paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.background,
     borderRadius: BORDER_RADIUS.sm,
   },
   editProfileText: {
     fontSize: 14,
-    color: COLORS.secondary,
     fontWeight: '500',
     marginLeft: SPACING.xs,
   },
@@ -388,7 +392,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.textPrimary,
     marginBottom: SPACING.md,
   },
   infoRow: {
@@ -396,18 +399,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   infoLabel: {
     flex: 1,
     fontSize: 14,
-    color: COLORS.textSecondary,
     marginLeft: SPACING.sm,
   },
   infoValue: {
     fontSize: 14,
     fontWeight: '500',
-    color: COLORS.textPrimary,
   },
   settingsCard: {
     marginBottom: SPACING.md,
@@ -418,7 +418,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   settingLeft: {
     flexDirection: 'row',
@@ -426,7 +425,6 @@ const styles = StyleSheet.create({
   },
   settingText: {
     fontSize: 15,
-    color: COLORS.textPrimary,
     marginLeft: SPACING.sm,
   },
   settingRight: {
@@ -435,7 +433,6 @@ const styles = StyleSheet.create({
   },
   settingValue: {
     fontSize: 14,
-    color: COLORS.textSecondary,
     marginRight: SPACING.xs,
   },
   logoutButton: {
@@ -444,31 +441,81 @@ const styles = StyleSheet.create({
   versionText: {
     textAlign: 'center',
     fontSize: 12,
-    color: COLORS.textLight,
     marginTop: SPACING.lg,
   },
   newBadge: {
-    backgroundColor: COLORS.success,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
     marginRight: 8,
   },
-  newBadgeText: {
+  badgeText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: COLORS.textWhite,
+    color: '#FFFFFF',
   },
-  premiumBadge: {
-    backgroundColor: COLORS.secondary,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginRight: 8,
+  languagePicker: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.sm,
+    paddingVertical: SPACING.sm,
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
   },
-  premiumBadgeText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: COLORS.textWhite,
+  languageOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    gap: SPACING.xs,
+  },
+  languageFlag: {
+    fontSize: 18,
+  },
+  languageLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.lg,
+  },
+  modalBox: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: SPACING.sm,
+  },
+  modalMessage: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: SPACING.lg,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  modalBtn: {
+    flex: 1,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    alignItems: 'center',
+  },
+  modalBtnCancel: {
+    borderWidth: 1,
+  },
+  modalBtnConfirm: {},
+  modalBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

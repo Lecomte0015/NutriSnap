@@ -16,3 +16,5 @@ export { AnimatedPressable } from './AnimatedPressable';
 export { ScanOverlay } from './ScanOverlay';
 export { AnimatedNumber } from './AnimatedNumber';
 export { ProgressSteps } from './ProgressSteps';
+export { BadgeUnlockModal } from './BadgeUnlockModal';
+export { GoogleLogo } from './GoogleLogo';

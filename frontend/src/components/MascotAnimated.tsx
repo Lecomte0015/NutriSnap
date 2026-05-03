@@ -78,6 +78,35 @@ export const MascotAnimated: React.FC<MascotAnimatedProps> = ({
     cancelAnimation(wiggleValue);
 
     switch (mood) {
+      case 'celebrating':
+        // Saut super énergique + rotation légère
+        bounceValue.value = withRepeat(
+          withSequence(
+            withSpring(-30, { damping: 3, stiffness: 250 }),
+            withSpring(0, { damping: 3, stiffness: 250 })
+          ),
+          -1,
+          false
+        );
+        bodyScale.value = withRepeat(
+          withSequence(
+            withSpring(1.25, { damping: 4 }),
+            withSpring(0.9, { damping: 4 }),
+            withSpring(1.1, { damping: 6 })
+          ),
+          -1,
+          true
+        );
+        wiggleValue.value = withRepeat(
+          withSequence(
+            withTiming(-12, { duration: 150 }),
+            withTiming(12, { duration: 150 })
+          ),
+          -1,
+          true
+        );
+        break;
+
       case 'excited':
         // Saut + énergie
         bounceValue.value = withRepeat(
@@ -171,6 +200,8 @@ export const MascotAnimated: React.FC<MascotAnimatedProps> = ({
   // Rendu du chemin de la bouche selon l'humeur
   const getMouthPath = useMemo(() => {
     switch (mood) {
+      case 'celebrating':
+        return 'M65 125 Q100 175 135 125'; // Sourire maximal
       case 'excited':
         return 'M70 130 Q100 165 130 130'; // Grand sourire
       case 'happy':
@@ -192,6 +223,7 @@ export const MascotAnimated: React.FC<MascotAnimatedProps> = ({
   // Taille des yeux selon l'humeur
   const eyeScale = useMemo(() => {
     switch (mood) {
+      case 'celebrating': return 1.4;
       case 'excited': return 1.3;
       case 'happy': return 1.1;
       case 'warning': return 0.9;
@@ -203,6 +235,13 @@ export const MascotAnimated: React.FC<MascotAnimatedProps> = ({
   // Sourcils selon l'humeur
   const renderEyebrows = () => {
     switch (mood) {
+      case 'celebrating':
+        return (
+          <G>
+            <Path d="M60 80 Q75 70 90 80" stroke={COLORS.primaryDark} strokeWidth={4} fill="none" strokeLinecap="round" />
+            <Path d="M110 80 Q125 70 140 80" stroke={COLORS.primaryDark} strokeWidth={4} fill="none" strokeLinecap="round" />
+          </G>
+        );
       case 'excited':
         return (
           <G>
@@ -316,21 +355,21 @@ export const MascotAnimated: React.FC<MascotAnimatedProps> = ({
         </G>
 
         {/* Joues */}
-        <Ellipse 
-          cx={55} 
-          cy={125} 
-          rx={10} 
-          ry={6} 
-          fill={COLORS.cheek} 
-          opacity={mood === 'happy' || mood === 'excited' ? 0.7 : 0.4} 
+        <Ellipse
+          cx={55}
+          cy={125}
+          rx={mood === 'celebrating' ? 14 : 10}
+          ry={mood === 'celebrating' ? 8 : 6}
+          fill={COLORS.cheek}
+          opacity={mood === 'happy' || mood === 'excited' || mood === 'celebrating' ? 0.8 : 0.4}
         />
-        <Ellipse 
-          cx={145} 
-          cy={125} 
-          rx={10} 
-          ry={6} 
-          fill={COLORS.cheek} 
-          opacity={mood === 'happy' || mood === 'excited' ? 0.7 : 0.4} 
+        <Ellipse
+          cx={145}
+          cy={125}
+          rx={mood === 'celebrating' ? 14 : 10}
+          ry={mood === 'celebrating' ? 8 : 6}
+          fill={COLORS.cheek}
+          opacity={mood === 'happy' || mood === 'excited' || mood === 'celebrating' ? 0.8 : 0.4}
         />
 
         {/* Bouche */}
@@ -342,11 +381,23 @@ export const MascotAnimated: React.FC<MascotAnimatedProps> = ({
           fill="none"
         />
 
-        {/* Dents pour excited */}
-        {mood === 'excited' && (
+        {/* Dents pour excited et celebrating */}
+        {(mood === 'excited' || mood === 'celebrating') && (
           <G>
             <Rect x={90} y={138} width={8} height={10} rx={2} fill={COLORS.white} />
             <Rect x={102} y={138} width={8} height={10} rx={2} fill={COLORS.white} />
+          </G>
+        )}
+
+        {/* Étoiles pour celebrating */}
+        {mood === 'celebrating' && (
+          <G>
+            <Path d="M20 40 L22 34 L24 40 L30 40 L25 44 L27 50 L22 46 L17 50 L19 44 L14 40 Z"
+              fill="#FFD700" opacity={0.9} />
+            <Path d="M170 30 L172 25 L174 30 L179 30 L175 33 L177 38 L172 35 L167 38 L169 33 L165 30 Z"
+              fill="#FF6B6B" opacity={0.9} />
+            <Path d="M10 160 L12 155 L14 160 L19 160 L15 163 L17 168 L12 165 L7 168 L9 163 L5 160 Z"
+              fill="#4ECDC4" opacity={0.8} />
           </G>
         )}
 

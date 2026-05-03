@@ -36,28 +36,39 @@ export const COLORS = {
   mascot: '#2fa4a7',
 };
 
+import { Platform } from 'react-native';
+
 export const SHADOWS = {
-  small: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  medium: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  large: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 6,
-  },
+  small: Platform.select({
+    web: { boxShadow: '0px 2px 4px rgba(0,0,0,0.10)' },
+    default: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+  })!,
+  medium: Platform.select({
+    web: { boxShadow: '0px 4px 8px rgba(0,0,0,0.15)' },
+    default: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+  })!,
+  large: Platform.select({
+    web: { boxShadow: '0px 6px 12px rgba(0,0,0,0.20)' },
+    default: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.2,
+      shadowRadius: 12,
+      elevation: 6,
+    },
+  })!,
 };
 
 export const SPACING = {

@@ -6,94 +6,98 @@ import {
   TouchableOpacity,
   Alert,
   Vibration,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/colors';
+import { SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/colors';
+import { useColors } from '../src/hooks/useColors';
 import { Card, MascotAnimated } from '../src/components';
-import i18n from '../src/i18n';
+import { useTranslation } from '../src/hooks/useTranslation';
+import { useStore } from '../src/store/useStore';
 
-// Mock product database - In production, use Open Food Facts API or similar
-const MOCK_PRODUCTS: Record<string, any> = {
-  '3017620422003': {
-    name: 'Nutella 400g',
-    brand: 'Ferrero',
-    calories: 539,
-    protein: 6.3,
-    carbs: 57.5,
-    fat: 30.9,
-    sugar: 56.3,
-    fiber: 0,
-    score: 2,
-    image: 'https://images.openfoodfacts.org/images/products/301/762/042/2003/front_fr.400.jpg',
-  },
-  '3175680011480': {
-    name: 'Eau minerale Evian 1.5L',
-    brand: 'Evian',
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-    sugar: 0,
-    fiber: 0,
-    score: 10,
-    image: null,
-  },
-  '7622210449283': {
-    name: 'Oreo Original',
-    brand: 'Oreo',
-    calories: 480,
-    protein: 4.5,
-    carbs: 69,
-    fat: 20,
-    sugar: 38,
-    fiber: 2,
-    score: 3,
-    image: null,
-  },
-};
+const OFF_BASE = 'https://world.openfoodfacts.org/api/v0/product';
+
+function computeNutriScore(product: any): number {
+  const cal = product.calories || 0;
+  const sugar = product.sugar || 0;
+  const fat = product.fat || 0;
+  const protein = product.protein || 0;
+  const fiber = product.fiber || 0;
+
+  let score = 10;
+  if (cal > 500) score -= 3;
+  else if (cal > 300) score -= 1;
+  if (sugar > 20) score -= 2;
+  else if (sugar > 10) score -= 1;
+  if (fat > 20) score -= 2;
+  else if (fat > 10) score -= 1;
+  if (protein > 10) score += 1;
+  if (fiber > 3) score += 1;
+  return Math.max(1, Math.min(10, score));
+}
+
+async function lookupBarcode(barcode: string): Promise<any | null> {
+  try {
+    const res = await fetch(`${OFF_BASE}/${barcode}.json`, {
+      headers: { 'User-Agent': 'NutriSnap/1.0' },
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json.status !== 1 || !json.product) return null;
+    const p = json.product;
+    const n = p.nutriments || {};
+    const product = {
+      name: p.product_name || p.product_name_fr || 'Produit inconnu',
+      brand: p.brands || '',
+      calories: Math.round(n['energy-kcal_100g'] || n['energy-kcal'] || 0),
+      protein: parseFloat((n['proteins_100g'] || 0).toFixed(1)),
+      carbs: parseFloat((n['carbohydrates_100g'] || 0).toFixed(1)),
+      fat: parseFloat((n['fat_100g'] || 0).toFixed(1)),
+      sugar: parseFloat((n['sugars_100g'] || 0).toFixed(1)),
+      fiber: parseFloat((n['fiber_100g'] || 0).toFixed(1)),
+      image: p.image_front_url || p.image_url || null,
+      barcode,
+    };
+    product.score = computeNutriScore(product);
+    return product;
+  } catch {
+    return null;
+  }
+}
 
 export default function BarcodeScannerScreen() {
   const router = useRouter();
+  const COLORS = useColors();
+  const { hapticsEnabled } = useStore();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [product, setProduct] = useState<any>(null);
-  const t = i18n.t.bind(i18n);
+  const t = useTranslation();
 
   const handleBarcodeScanned = async ({ type, data }: BarcodeScanningResult) => {
     if (scanned) return;
-    
     setScanned(true);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Vibration.vibrate(100);
+    setLoading(true);
+    if (hapticsEnabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (hapticsEnabled) Vibration.vibrate(100);
 
-    console.log('Barcode scanned:', type, data);
+    const found = await lookupBarcode(data);
+    setLoading(false);
 
-    // Look up product
-    const foundProduct = MOCK_PRODUCTS[data];
-
-    if (foundProduct) {
-      setProduct({ ...foundProduct, barcode: data });
+    if (found) {
+      setProduct(found);
     } else {
-      // In production, call Open Food Facts API
       Alert.alert(
-        'Produit non trouve',
-        `Code-barres: ${data}\n\nCe produit n\'est pas encore dans notre base de donnees. Voulez-vous l\'ajouter ?`,
-        [
-          { text: 'Non', onPress: () => setScanned(false) },
-          { text: 'Oui', onPress: () => handleAddProduct(data) },
-        ]
+        'Produit non trouvé',
+        `Code-barres: ${data}\n\nCe produit n'est pas dans la base Open Food Facts.`,
+        [{ text: 'Scanner à nouveau', onPress: () => setScanned(false) }]
       );
     }
-  };
-
-  const handleAddProduct = (barcode: string) => {
-    // In production, open a form to add the product
-    Alert.alert('Bientot disponible', 'L\'ajout de produits sera disponible dans une prochaine mise a jour.');
-    setScanned(false);
   };
 
   const handleAddToMeal = () => {
@@ -126,17 +130,17 @@ export default function BarcodeScannerScreen() {
   if (!permission.granted) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.permissionContainer}>
+        <View style={[styles.permissionContainer, { backgroundColor: COLORS.background }]}>
           <MascotAnimated mood="sad" size={120} />
-          <Text style={styles.permissionTitle}>Acces camera requis</Text>
-          <Text style={styles.permissionText}>
+          <Text style={[styles.permissionTitle, { color: COLORS.textPrimary }]}>Acces camera requis</Text>
+          <Text style={[styles.permissionText, { color: COLORS.textSecondary }]}>
             Pour scanner les codes-barres, nous avons besoin d'acceder a votre camera.
           </Text>
-          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+          <TouchableOpacity style={[styles.permissionButton, { backgroundColor: COLORS.secondary }]} onPress={requestPermission}>
             <Text style={styles.permissionButtonText}>Autoriser la camera</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Text style={styles.backButtonText}>Retour</Text>
+            <Text style={[styles.backButtonText, { color: COLORS.textSecondary }]}>Retour</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -145,74 +149,74 @@ export default function BarcodeScannerScreen() {
 
   if (product) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
             <Ionicons name="close" size={28} color={COLORS.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.title}>Produit trouve</Text>
+          <Text style={[styles.title, { color: COLORS.textPrimary }]}>Produit trouve</Text>
           <View style={{ width: 40 }} />
         </View>
 
-        <View style={styles.productContainer}>
+        <View style={[styles.productContainer, { backgroundColor: COLORS.background }]}>
           <Card style={styles.productCard}>
             <View style={styles.productHeader}>
               <View style={styles.productInfo}>
-                <Text style={styles.productBrand}>{product.brand}</Text>
-                <Text style={styles.productName}>{product.name}</Text>
-                <Text style={styles.productBarcode}>Code: {product.barcode}</Text>
+                <Text style={[styles.productBrand, { color: COLORS.textSecondary }]}>{product.brand}</Text>
+                <Text style={[styles.productName, { color: COLORS.textPrimary }]}>{product.name}</Text>
+                <Text style={[styles.productBarcode, { color: COLORS.textLight }]}>Code: {product.barcode}</Text>
               </View>
               <View style={[styles.scoreBadge, { backgroundColor: getScoreColor(product.score) }]}>
                 <Text style={styles.scoreText}>{product.score}/10</Text>
               </View>
             </View>
 
-            <View style={styles.nutritionGrid}>
+            <View style={[styles.nutritionGrid, { borderTopColor: COLORS.border }]}>
               <View style={styles.nutritionItem}>
-                <Text style={styles.nutritionValue}>{product.calories}</Text>
-                <Text style={styles.nutritionLabel}>Calories</Text>
+                <Text style={[styles.nutritionValue, { color: COLORS.textPrimary }]}>{product.calories}</Text>
+                <Text style={[styles.nutritionLabel, { color: COLORS.textSecondary }]}>Calories</Text>
               </View>
               <View style={styles.nutritionItem}>
-                <Text style={styles.nutritionValue}>{product.protein}g</Text>
-                <Text style={styles.nutritionLabel}>Proteines</Text>
+                <Text style={[styles.nutritionValue, { color: COLORS.textPrimary }]}>{product.protein}g</Text>
+                <Text style={[styles.nutritionLabel, { color: COLORS.textSecondary }]}>Proteines</Text>
               </View>
               <View style={styles.nutritionItem}>
-                <Text style={styles.nutritionValue}>{product.carbs}g</Text>
-                <Text style={styles.nutritionLabel}>Glucides</Text>
+                <Text style={[styles.nutritionValue, { color: COLORS.textPrimary }]}>{product.carbs}g</Text>
+                <Text style={[styles.nutritionLabel, { color: COLORS.textSecondary }]}>Glucides</Text>
               </View>
               <View style={styles.nutritionItem}>
-                <Text style={styles.nutritionValue}>{product.fat}g</Text>
-                <Text style={styles.nutritionLabel}>Lipides</Text>
+                <Text style={[styles.nutritionValue, { color: COLORS.textPrimary }]}>{product.fat}g</Text>
+                <Text style={[styles.nutritionLabel, { color: COLORS.textSecondary }]}>Lipides</Text>
               </View>
             </View>
 
             {product.sugar > 20 && (
               <View style={styles.warningBanner}>
                 <Ionicons name="warning" size={20} color={COLORS.warning} />
-                <Text style={styles.warningText}>Attention: Teneur elevee en sucre ({product.sugar}g)</Text>
+                <Text style={[styles.warningText, { color: COLORS.warning }]}>Attention: Teneur elevee en sucre ({product.sugar}g)</Text>
               </View>
             )}
           </Card>
 
-          <MascotAnimated 
-            mood={product.score >= 7 ? 'happy' : product.score >= 4 ? 'warning' : 'sad'} 
-            size={100} 
+          <MascotAnimated
+            mood={product.score >= 7 ? 'happy' : product.score >= 4 ? 'warning' : 'sad'}
+            size={100}
           />
-          <Text style={styles.mascotMessage}>
-            {product.score >= 7 
-              ? 'Excellent choix ! Ce produit est sain.' 
-              : product.score >= 4 
-                ? 'Pas mal, mais consomme avec moderation.' 
+          <Text style={[styles.mascotMessage, { color: COLORS.textSecondary }]}>
+            {product.score >= 7
+              ? 'Excellent choix ! Ce produit est sain.'
+              : product.score >= 4
+                ? 'Pas mal, mais consomme avec moderation.'
                 : 'Attention, ce produit n\'est pas tres sain...'}
           </Text>
 
           <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.scanAgainButton} onPress={handleScanAgain}>
+            <TouchableOpacity style={[styles.scanAgainButton, { borderColor: COLORS.secondary }]} onPress={handleScanAgain}>
               <Ionicons name="scan" size={20} color={COLORS.secondary} />
-              <Text style={styles.scanAgainText}>Scanner un autre</Text>
+              <Text style={[styles.scanAgainText, { color: COLORS.secondary }]}>Scanner un autre</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.addButton} onPress={handleAddToMeal}>
-              <Ionicons name="add" size={20} color={COLORS.textWhite} />
+            <TouchableOpacity style={[styles.addButton, { backgroundColor: COLORS.secondary }]} onPress={handleAddToMeal}>
+              <Ionicons name="add" size={20} color="#FFFFFF" />
               <Text style={styles.addButtonText}>Ajouter au repas</Text>
             </TouchableOpacity>
           </View>
@@ -246,16 +250,23 @@ export default function BarcodeScannerScreen() {
             <View style={[styles.corner, styles.bottomLeft]} />
             <View style={[styles.corner, styles.bottomRight]} />
           </View>
-          <Text style={styles.instructions}>
-            Placez le code-barres dans le cadre
-          </Text>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={COLORS.secondary} />
+              <Text style={styles.loadingText}>Recherche du produit...</Text>
+            </View>
+          ) : (
+            <Text style={styles.instructions}>
+              Placez le code-barres dans le cadre
+            </Text>
+          )}
         </View>
       </CameraView>
 
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.manualButton} onPress={() => Alert.alert('Bientot', 'Saisie manuelle bientot disponible')}>
+      <View style={[styles.footer, { backgroundColor: COLORS.cardBackground }]}>
+        <TouchableOpacity style={[styles.manualButton, { borderColor: COLORS.secondary }]} onPress={() => Alert.alert('Bientot', 'Saisie manuelle bientot disponible')}>
           <Ionicons name="keypad" size={24} color={COLORS.secondary} />
-          <Text style={styles.manualButtonText}>Saisie manuelle</Text>
+          <Text style={[styles.manualButtonText, { color: COLORS.secondary }]}>Saisie manuelle</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -288,7 +299,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
   },
   camera: {
     flex: 1,
@@ -308,7 +318,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 30,
     height: 30,
-    borderColor: COLORS.secondary,
+    borderColor: '#4dd0e1',
   },
   topLeft: {
     top: 0,
@@ -339,14 +349,22 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 8,
   },
   instructions: {
-    color: COLORS.textWhite,
+    color: '#FFFFFF',
     fontSize: 16,
     marginTop: SPACING.lg,
     textAlign: 'center',
   },
+  loadingContainer: {
+    alignItems: 'center',
+    marginTop: SPACING.lg,
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    marginTop: SPACING.sm,
+  },
   footer: {
     padding: SPACING.lg,
-    backgroundColor: COLORS.cardBackground,
   },
   manualButton: {
     flexDirection: 'row',
@@ -355,11 +373,9 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
     borderWidth: 2,
-    borderColor: COLORS.secondary,
   },
   manualButtonText: {
     marginLeft: SPACING.sm,
-    color: COLORS.secondary,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -368,30 +384,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: SPACING.xl,
-    backgroundColor: COLORS.background,
   },
   permissionTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
     marginTop: SPACING.lg,
   },
   permissionText: {
     fontSize: 16,
-    color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: SPACING.sm,
     lineHeight: 24,
   },
   permissionButton: {
-    backgroundColor: COLORS.secondary,
     paddingHorizontal: SPACING.xl,
     paddingVertical: SPACING.md,
     borderRadius: BORDER_RADIUS.round,
     marginTop: SPACING.xl,
   },
   permissionButtonText: {
-    color: COLORS.textWhite,
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -400,12 +412,10 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
   },
   backButtonText: {
-    color: COLORS.textSecondary,
     fontSize: 16,
   },
   productContainer: {
     flex: 1,
-    backgroundColor: COLORS.background,
     padding: SPACING.md,
     alignItems: 'center',
   },
@@ -423,17 +433,14 @@ const styles = StyleSheet.create({
   },
   productBrand: {
     fontSize: 14,
-    color: COLORS.textSecondary,
   },
   productName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
     marginTop: 4,
   },
   productBarcode: {
     fontSize: 12,
-    color: COLORS.textLight,
     marginTop: 4,
   },
   scoreBadge: {
@@ -442,7 +449,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.round,
   },
   scoreText: {
-    color: COLORS.textWhite,
+    color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 14,
   },
@@ -452,7 +459,6 @@ const styles = StyleSheet.create({
     marginTop: SPACING.lg,
     paddingTop: SPACING.md,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
   },
   nutritionItem: {
     alignItems: 'center',
@@ -460,30 +466,26 @@ const styles = StyleSheet.create({
   nutritionValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
   },
   nutritionLabel: {
     fontSize: 12,
-    color: COLORS.textSecondary,
     marginTop: 2,
   },
   warningBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.warning + '20',
+    backgroundColor: 'rgba(255,152,0,0.12)',
     padding: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
     marginTop: SPACING.md,
   },
   warningText: {
     marginLeft: SPACING.sm,
-    color: COLORS.warning,
     fontSize: 13,
     flex: 1,
   },
   mascotMessage: {
     fontSize: 15,
-    color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: SPACING.sm,
     paddingHorizontal: SPACING.lg,
@@ -501,25 +503,22 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
     borderWidth: 2,
-    borderColor: COLORS.secondary,
   },
   scanAgainText: {
     marginLeft: SPACING.sm,
-    color: COLORS.secondary,
     fontSize: 15,
     fontWeight: '600',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.secondary,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
   },
   addButtonText: {
     marginLeft: SPACING.sm,
-    color: COLORS.textWhite,
+    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '600',
   },

@@ -63,7 +63,7 @@ export interface Testimonial {
   rating: number;
   text: string;
   weightLost?: number;
-  duration: string;
+  durationMonths?: number;
 }
 
 export interface GamificationState {
@@ -75,14 +75,14 @@ export interface GamificationState {
   leaderboard: LeaderboardEntry[];
 }
 
-// Définition des niveaux
+// Définition des niveaux (names translated via i18n keys: levels.level1..level6)
 export const USER_LEVELS: UserLevel[] = [
-  { level: 1, name: 'Débutant', minXp: 0, maxXp: 100, icon: '🌱', color: '#8BC34A' },
-  { level: 2, name: 'Apprenti', minXp: 100, maxXp: 300, icon: '🥗', color: '#4CAF50' },
-  { level: 3, name: 'Confirmé', minXp: 300, maxXp: 600, icon: '💪', color: '#2196F3' },
-  { level: 4, name: 'Expert', minXp: 600, maxXp: 1000, icon: '🏆', color: '#FF9800' },
-  { level: 5, name: 'Maître Nutrition', minXp: 1000, maxXp: 2000, icon: '👑', color: '#9C27B0' },
-  { level: 6, name: 'Légende', minXp: 2000, maxXp: 999999, icon: '⭐', color: '#FFD700' },
+  { level: 1, name: 'level1', minXp: 0, maxXp: 100, icon: '🌱', color: '#8BC34A' },
+  { level: 2, name: 'level2', minXp: 100, maxXp: 300, icon: '🥗', color: '#4CAF50' },
+  { level: 3, name: 'level3', minXp: 300, maxXp: 600, icon: '💪', color: '#2196F3' },
+  { level: 4, name: 'level4', minXp: 600, maxXp: 1000, icon: '🏆', color: '#FF9800' },
+  { level: 5, name: 'level5', minXp: 1000, maxXp: 2000, icon: '👑', color: '#9C27B0' },
+  { level: 6, name: 'level6', minXp: 2000, maxXp: 999999, icon: '⭐', color: '#FFD700' },
 ];
 
 // Définition des badges
@@ -162,7 +162,7 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     text: 'NutriSnap a changé ma vie ! J\'ai perdu 8kg en 3 mois sans me priver. La mascotte me motive chaque jour !',
     weightLost: 8,
-    duration: '3 mois',
+    durationMonths: 3,
   },
   {
     id: '2',
@@ -171,7 +171,7 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     text: 'Enfin une app qui comprend ce que je mange ! L\'analyse IA est bluffante de précision.',
     weightLost: 5,
-    duration: '2 mois',
+    durationMonths: 2,
   },
   {
     id: '3',
@@ -180,7 +180,7 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     text: 'Le système de badges me pousse à faire attention à mon alimentation. Très ludique !',
     weightLost: 12,
-    duration: '4 mois',
+    durationMonths: 4,
   },
   {
     id: '4',
@@ -189,6 +189,6 @@ export const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     text: 'Premium vaut vraiment le coup. Les suggestions de recettes sont géniales !',
     weightLost: 6,
-    duration: '2 mois',
+    durationMonths: 2,
   },
 ];

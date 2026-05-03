@@ -91,4 +91,12 @@ export interface AnalysisResult {
   feedback: string;
 }
 
-export type MascotMood = 'idle' | 'happy' | 'excited' | 'sad' | 'warning' | 'thinking';
+export type MascotMood = 'idle' | 'happy' | 'excited' | 'sad' | 'warning' | 'thinking' | 'celebrating';
+
+export interface GamificationData {
+  totalXp: number;
+  mealsScanned: number;
+  averageScore: number;
+  unlockedBadgeIds: string[];
+  newlyUnlockedBadgeId: string | null;
+}

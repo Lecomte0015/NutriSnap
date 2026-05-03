@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/colors';
+import { SPACING, BORDER_RADIUS, SHADOWS } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
 import { Badge } from '../types/gamification';
 
 interface BadgeCardProps {
@@ -14,6 +15,8 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({
   size = 'medium',
   onPress,
 }) => {
+  const COLORS = useColors();
+
   const sizeConfig = {
     small: { container: 60, icon: 24, name: 10 },
     medium: { container: 80, icon: 32, name: 12 },
@@ -24,13 +27,7 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({
 
   return (
     <TouchableOpacity
-      style={[
-        styles.container,
-        {
-          width: config.container,
-          opacity: badge.isUnlocked ? 1 : 0.4,
-        },
-      ]}
+      style={[styles.container, { width: config.container, opacity: badge.isUnlocked ? 1 : 0.4 }]}
       onPress={onPress}
       disabled={!onPress}
     >
@@ -52,10 +49,7 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({
           </View>
         )}
       </View>
-      <Text
-        style={[styles.name, { fontSize: config.name }]}
-        numberOfLines={2}
-      >
+      <Text style={[styles.name, { fontSize: config.name, color: COLORS.textPrimary }]} numberOfLines={2}>
         {badge.name}
       </Text>
     </TouchableOpacity>
@@ -85,7 +79,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   name: {
-    color: COLORS.textPrimary,
     fontWeight: '500',
     textAlign: 'center',
     marginTop: SPACING.xs,

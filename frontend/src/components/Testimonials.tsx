@@ -9,7 +9,9 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/colors';
+import { SPACING, BORDER_RADIUS, SHADOWS } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
+import { useTranslation } from '../hooks/useTranslation';
 import { TESTIMONIALS, Testimonial } from '../types/gamification';
 
 const { width } = Dimensions.get('window');
@@ -20,9 +22,10 @@ interface TestimonialsProps {
 }
 
 export const Testimonials: React.FC<TestimonialsProps> = ({ autoPlay = true }) => {
+  const COLORS = useColors();
+  const t = useTranslation();
   const scrollViewRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (!autoPlay) return;
@@ -51,29 +54,31 @@ export const Testimonials: React.FC<TestimonialsProps> = ({ autoPlay = true }) =
   };
 
   const renderTestimonial = (testimonial: Testimonial) => (
-    <View key={testimonial.id} style={styles.card}>
+    <View key={testimonial.id} style={[styles.card, { backgroundColor: COLORS.cardBackground }]}>
       <View style={styles.header}>
         <Image source={{ uri: testimonial.avatar }} style={styles.avatar} />
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>{testimonial.name}</Text>
+          <Text style={[styles.userName, { color: COLORS.textPrimary }]}>{testimonial.name}</Text>
           <View style={styles.starsContainer}>{renderStars(testimonial.rating)}</View>
         </View>
         {testimonial.weightLost && (
-          <View style={styles.resultBadge}>
+          <View style={[styles.resultBadge, { backgroundColor: COLORS.success }]}>
             <Text style={styles.resultText}>-{testimonial.weightLost}kg</Text>
           </View>
         )}
       </View>
-      <Text style={styles.testimonialText}>"{testimonial.text}"</Text>
-      {testimonial.duration && (
-        <Text style={styles.duration}>En {testimonial.duration}</Text>
+      <Text style={[styles.testimonialText, { color: COLORS.textSecondary }]}>"{testimonial.text}"</Text>
+      {testimonial.durationMonths && (
+        <Text style={[styles.duration, { color: COLORS.secondary }]}>
+          {t('testimonials.duration', { count: testimonial.durationMonths })}
+        </Text>
       )}
     </View>
   );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Ce qu'ils en pensent</Text>
+      <Text style={[styles.title, { color: COLORS.textPrimary }]}>{t('testimonials.title')}</Text>
       <ScrollView
         ref={scrollViewRef}
         horizontal
@@ -93,7 +98,8 @@ export const Testimonials: React.FC<TestimonialsProps> = ({ autoPlay = true }) =
             key={index}
             style={[
               styles.paginationDot,
-              index === currentIndex && styles.paginationDotActive,
+              { backgroundColor: COLORS.textLight },
+              index === currentIndex && { backgroundColor: COLORS.secondary, width: 20 },
             ]}
           />
         ))}
@@ -109,7 +115,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
     marginBottom: SPACING.md,
     paddingHorizontal: SPACING.md,
   },
@@ -118,7 +123,6 @@ const styles = StyleSheet.create({
   },
   card: {
     width: CARD_WIDTH,
-    backgroundColor: COLORS.cardBackground,
     borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.lg,
     marginRight: 20,
@@ -141,32 +145,28 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.textPrimary,
   },
   starsContainer: {
     flexDirection: 'row',
     marginTop: 4,
   },
   resultBadge: {
-    backgroundColor: COLORS.success,
     paddingHorizontal: SPACING.sm,
     paddingVertical: 4,
     borderRadius: BORDER_RADIUS.round,
   },
   resultText: {
-    color: COLORS.textWhite,
+    color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 14,
   },
   testimonialText: {
     fontSize: 15,
-    color: COLORS.textSecondary,
     lineHeight: 22,
     fontStyle: 'italic',
   },
   duration: {
     fontSize: 13,
-    color: COLORS.secondary,
     marginTop: SPACING.sm,
     fontWeight: '500',
   },
@@ -179,12 +179,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: COLORS.textLight,
     marginHorizontal: 4,
-  },
-  paginationDotActive: {
-    backgroundColor: COLORS.secondary,
-    width: 20,
   },
 });
 

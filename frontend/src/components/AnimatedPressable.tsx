@@ -9,6 +9,7 @@ import Animated, {
   Extrapolation,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { useStore } from '../store/useStore';
 
 interface AnimatedPressableProps {
   children: React.ReactNode;
@@ -27,6 +28,7 @@ export const AnimatedPressable: React.FC<AnimatedPressableProps> = ({
   haptic = true,
   disabled = false,
 }) => {
+  const { hapticsEnabled } = useStore();
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
 
@@ -48,7 +50,7 @@ export const AnimatedPressable: React.FC<AnimatedPressableProps> = ({
   };
 
   const handlePress = () => {
-    if (haptic) {
+    if (haptic && hapticsEnabled) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     onPress?.();

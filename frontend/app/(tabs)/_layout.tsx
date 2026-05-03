@@ -1,11 +1,13 @@
 import React from 'react';
+import { Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../src/constants/colors';
-import i18n from '../../src/i18n';
+import { useColors } from '../../src/hooks/useColors';
+import { useTranslation } from '../../src/hooks/useTranslation';
 
 export default function TabsLayout() {
-  const t = i18n.t.bind(i18n);
+  const t = useTranslation();
+  const COLORS = useColors();
 
   return (
     <Tabs
@@ -17,10 +19,10 @@ export default function TabsLayout() {
           backgroundColor: COLORS.cardBackground,
           borderTopWidth: 0,
           elevation: 10,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
+          ...Platform.select({
+            web: { boxShadow: '0px -2px 8px rgba(0,0,0,0.10)' },
+            default: { shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 8 },
+          }),
           height: 80,
           paddingBottom: 20,
           paddingTop: 10,
@@ -46,6 +48,15 @@ export default function TabsLayout() {
           title: t('history.title'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="time" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="planner"
+        options={{
+          title: t('planner.title'),
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar" size={size} color={color} />
           ),
         }}
       />

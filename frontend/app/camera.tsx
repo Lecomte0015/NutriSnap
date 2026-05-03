@@ -7,6 +7,7 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,29 +15,31 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, BORDER_RADIUS } from '../src/constants/colors';
+import { SPACING, BORDER_RADIUS } from '../src/constants/colors';
+import { useColors } from '../src/hooks/useColors';
 import { Button, MascotAnimated, ScanOverlay } from '../src/components';
 import { useStore } from '../src/store/useStore';
 import { useMascotController } from '../src/hooks/useMascotController';
+import { useTranslation } from '../src/hooks/useTranslation';
 import i18n from '../src/i18n';
 
 export default function CameraScreen() {
   const router = useRouter();
-  const { user, profile, isPremium, analysisCountToday, incrementAnalysisCount } = useStore();
+  const COLORS = useColors();
+  const { user, profile, isPremium, analysisCountToday, incrementAnalysisCount, hapticsEnabled } = useStore();
   const { setThinking, resetToIdle } = useMascotController();
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<CameraType>('back');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const cameraRef = useRef<CameraView>(null);
-  const t = i18n.t.bind(i18n);
+  const t = useTranslation();
 
   const takePicture = async () => {
     if (!cameraRef.current) return;
 
     try {
-      // Haptic feedback when taking photo
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      if (hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.7,
@@ -45,8 +48,7 @@ export default function CameraScreen() {
 
       if (photo?.base64) {
         setCapturedImage(photo.base64);
-        // Success haptic
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        if (hapticsEnabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (error) {
       console.error('Error taking picture:', error);
@@ -102,7 +104,7 @@ export default function CameraScreen() {
           body: JSON.stringify({
             user_id: user.id,
             image_base64: capturedImage,
-            language: profile?.language || 'fr',
+            language: i18n.locale,
           }),
         }
       );
@@ -151,7 +153,7 @@ export default function CameraScreen() {
   if (!permission) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.permissionContainer}>
+        <View style={[styles.permissionContainer, { backgroundColor: COLORS.background }]}>
           <ActivityIndicator size="large" color={COLORS.secondary} />
         </View>
       </SafeAreaView>
@@ -161,10 +163,10 @@ export default function CameraScreen() {
   if (!permission.granted) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.permissionContainer}>
+        <View style={[styles.permissionContainer, { backgroundColor: COLORS.background }]}>
           <MascotAnimated mood="sad" size={120} />
-          <Text style={styles.permissionTitle}>{t('camera.permissionRequired')}</Text>
-          <Text style={styles.permissionText}>{t('camera.permissionMessage')}</Text>
+          <Text style={[styles.permissionTitle, { color: COLORS.textPrimary }]}>{t('camera.permissionRequired')}</Text>
+          <Text style={[styles.permissionText, { color: COLORS.textSecondary }]}>{t('camera.permissionMessage')}</Text>
           <Button
             title={t('camera.grantPermission')}
             onPress={requestPermission}
@@ -186,7 +188,7 @@ export default function CameraScreen() {
       <SafeAreaView style={styles.container}>
         {/* Close button */}
         <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
-          <Ionicons name="close" size={28} color={COLORS.textWhite} />
+          <Ionicons name="close" size={28} color="#FFFFFF" />
         </TouchableOpacity>
 
         <View style={styles.previewContainer}>
@@ -228,7 +230,7 @@ export default function CameraScreen() {
     <SafeAreaView style={styles.container}>
       {/* Close button */}
       <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
-        <Ionicons name="close" size={28} color={COLORS.textWhite} />
+        <Ionicons name="close" size={28} color="#FFFFFF" />
       </TouchableOpacity>
 
       <CameraView
@@ -239,7 +241,7 @@ export default function CameraScreen() {
         {/* Scan Overlay with animated guides */}
         <ScanOverlay isScanning={false} />
         <View style={styles.cameraOverlay}>
-          <Text style={styles.guideText}>Placez votre repas dans le cadre</Text>
+          <Text style={styles.guideText}>{t('camera.placeInFrame')}</Text>
         </View>
       </CameraView>
 
@@ -248,13 +250,13 @@ export default function CameraScreen() {
         style={styles.barcodeButton} 
         onPress={() => router.push('/barcode-scanner')}
       >
-        <Ionicons name="barcode-outline" size={24} color={COLORS.textWhite} />
-        <Text style={styles.barcodeButtonText}>Scanner code-barres</Text>
+        <Ionicons name="barcode-outline" size={24} color="#FFFFFF" />
+        <Text style={styles.barcodeButtonText}>{t('camera.scanBarcode')}</Text>
       </TouchableOpacity>
 
       <View style={styles.controls}>
         <TouchableOpacity style={styles.galleryButton} onPress={pickImage}>
-          <Ionicons name="images" size={28} color={COLORS.textWhite} />
+          <Ionicons name="images" size={28} color="#FFFFFF" />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
@@ -265,7 +267,7 @@ export default function CameraScreen() {
           style={styles.flipButton}
           onPress={() => setFacing(facing === 'back' ? 'front' : 'back')}
         >
-          <Ionicons name="camera-reverse" size={28} color={COLORS.textWhite} />
+          <Ionicons name="camera-reverse" size={28} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -306,7 +308,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 40,
     height: 40,
-    borderColor: COLORS.textWhite,
+    borderColor: '#FFFFFF',
   },
   topLeft: {
     top: 0,
@@ -337,12 +339,13 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 12,
   },
   guideText: {
-    color: COLORS.textWhite,
+    color: '#FFFFFF',
     fontSize: 14,
     marginTop: SPACING.lg,
-    textShadowColor: 'rgba(0,0,0,0.8)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    ...Platform.select({
+      web: { textShadow: '1px 1px 2px rgba(0,0,0,0.8)' },
+      default: { textShadowColor: 'rgba(0,0,0,0.8)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 },
+    }),
   },
   controls: {
     flexDirection: 'row',
@@ -368,13 +371,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 4,
-    borderColor: COLORS.textWhite,
+    borderColor: '#FFFFFF',
   },
   captureInner: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: COLORS.textWhite,
+    backgroundColor: '#FFFFFF',
   },
   flipButton: {
     width: 50,
@@ -401,7 +404,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   analyzingText: {
-    color: COLORS.textWhite,
+    color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '500',
     marginTop: SPACING.md,
@@ -425,18 +428,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: SPACING.xl,
-    backgroundColor: COLORS.background,
   },
   permissionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
     marginTop: SPACING.lg,
     textAlign: 'center',
   },
   permissionText: {
     fontSize: 16,
-    color: COLORS.textSecondary,
     marginTop: SPACING.sm,
     textAlign: 'center',
   },
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.round,
   },
   barcodeButtonText: {
-    color: COLORS.textWhite,
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
     marginLeft: SPACING.sm,

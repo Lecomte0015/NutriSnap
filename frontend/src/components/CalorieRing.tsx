@@ -6,7 +6,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
-import { COLORS, SPACING } from '../constants/colors';
+import { SPACING } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -23,6 +24,7 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
   size = 180,
   strokeWidth = 15,
 }) => {
+  const COLORS = useColors();
   const progress = useSharedValue(0);
   const percentage = Math.min((current / goal) * 100, 100);
   const radius = (size - strokeWidth) / 2;
@@ -32,11 +34,9 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
     progress.value = withTiming(percentage / 100, { duration: 1000 });
   }, [percentage]);
 
-  const animatedProps = useAnimatedProps(() => {
-    return {
-      strokeDashoffset: circumference * (1 - progress.value),
-    };
-  });
+  const animatedProps = useAnimatedProps(() => ({
+    strokeDashoffset: circumference * (1 - progress.value),
+  }));
 
   const getColor = () => {
     if (percentage >= 100) return COLORS.warning;
@@ -47,7 +47,6 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
   return (
     <View style={[styles.container, { width: size, height: size }]}>
       <Svg width={size} height={size} style={styles.svg}>
-        {/* Background circle */}
         <Circle
           cx={size / 2}
           cy={size / 2}
@@ -56,7 +55,6 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
           strokeWidth={strokeWidth}
           fill="transparent"
         />
-        {/* Progress circle */}
         <AnimatedCircle
           cx={size / 2}
           cy={size / 2}
@@ -71,9 +69,9 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
         />
       </Svg>
       <View style={styles.content}>
-        <Text style={styles.currentValue}>{current}</Text>
-        <Text style={styles.goalValue}>/ {goal}</Text>
-        <Text style={styles.label}>kcal</Text>
+        <Text style={[styles.currentValue, { color: COLORS.textPrimary }]}>{current}</Text>
+        <Text style={[styles.goalValue, { color: COLORS.textSecondary }]}>/ {goal}</Text>
+        <Text style={[styles.label, { color: COLORS.textLight }]}>kcal</Text>
       </View>
     </View>
   );
@@ -93,16 +91,13 @@ const styles = StyleSheet.create({
   currentValue: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
   },
   goalValue: {
     fontSize: 16,
-    color: COLORS.textSecondary,
     marginTop: -4,
   },
   label: {
     fontSize: 14,
-    color: COLORS.textLight,
     marginTop: 4,
   },
 });

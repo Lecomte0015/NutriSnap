@@ -10,153 +10,101 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/colors';
+import { SPACING, BORDER_RADIUS } from '../src/constants/colors';
+import { useColors } from '../src/hooks/useColors';
 import { Card, MascotAnimated } from '../src/components';
+import { useTranslation } from '../src/hooks/useTranslation';
 
 export default function AboutScreen() {
   const router = useRouter();
+  const COLORS = useColors();
+  const t = useTranslation();
 
   const showPrivacyPolicy = () => {
-    Alert.alert(
-      'Politique de confidentialite',
-      'NutriSnap respecte votre vie privee.\n\n' +
-      '- Vos donnees personnelles sont stockees de maniere securisee\n' +
-      '- Nous ne vendons jamais vos informations\n' +
-      '- Vos photos de repas sont analysees puis supprimees\n' +
-      '- Vous pouvez supprimer votre compte a tout moment\n\n' +
-      'Pour plus de details, contactez-nous a privacy@nutrisnap.app',
-      [{ text: 'Fermer', style: 'default' }]
-    );
+    Alert.alert(t('about.privacyTitle'), t('about.privacyText'), [{ text: t('about.close'), style: 'default' }]);
   };
 
   const showTermsOfService = () => {
-    Alert.alert(
-      'Conditions d\'utilisation',
-      'En utilisant NutriSnap, vous acceptez :\n\n' +
-      '- D\'utiliser l\'app de maniere responsable\n' +
-      '- De ne pas partager de contenu inapproprie\n' +
-      '- Que l\'analyse IA est indicative et non medicale\n' +
-      '- De consulter un professionnel pour tout regime\n\n' +
-      'Pour plus de details, contactez-nous a legal@nutrisnap.app',
-      [{ text: 'Fermer', style: 'default' }]
-    );
+    Alert.alert(t('about.termsTitle'), t('about.termsText'), [{ text: t('about.close'), style: 'default' }]);
   };
 
   const showWebsite = () => {
-    Alert.alert(
-      'Site web',
-      'Visitez notre site web pour plus d\'informations :\n\nwww.nutrisnap.app\n\n(Fonctionnalite de navigation externe bientot disponible)',
-      [{ text: 'Fermer', style: 'default' }]
-    );
+    Alert.alert(t('about.websiteTitle'), t('about.websiteText'), [{ text: t('about.close'), style: 'default' }]);
   };
 
+  const features = [
+    { icon: 'camera', title: t('about.feature1Title'), desc: t('about.feature1Desc') },
+    { icon: 'trophy', title: t('about.feature2Title'), desc: t('about.feature2Desc') },
+    { icon: 'chatbubbles', title: t('about.feature3Title'), desc: t('about.feature3Desc') },
+  ];
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.title}>A propos</Text>
+        <Text style={[styles.title, { color: COLORS.textPrimary }]}>{t('about.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Logo & Mascot */}
         <View style={styles.logoSection}>
           <MascotAnimated mood="happy" size={120} />
-          <Text style={styles.appName}>NutriSnap</Text>
-          <Text style={styles.appTagline}>Ton coach nutrition intelligent</Text>
-          <Text style={styles.version}>Version 1.0.0</Text>
+          <Text style={[styles.appName, { color: COLORS.secondary }]}>NutriSnap</Text>
+          <Text style={[styles.appTagline, { color: COLORS.textSecondary }]}>{t('about.tagline')}</Text>
+          <Text style={[styles.version, { color: COLORS.textLight }]}>Version 1.0.0</Text>
         </View>
 
-        {/* About Card */}
         <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Notre mission</Text>
-          <Text style={styles.cardText}>
-            NutriSnap a ete cree pour rendre le suivi nutritionnel simple et accessible a tous. 
-            Grace a l'intelligence artificielle, nous analysons tes repas en un instant pour 
-            t'aider a atteindre tes objectifs de sante.
-          </Text>
+          <Text style={[styles.cardTitle, { color: COLORS.textPrimary }]}>{t('about.missionTitle')}</Text>
+          <Text style={[styles.cardText, { color: COLORS.textSecondary }]}>{t('about.missionText')}</Text>
         </Card>
 
-        {/* Features */}
         <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Ce que nous offrons</Text>
-          
-          <View style={styles.featureRow}>
-            <Ionicons name="camera" size={24} color={COLORS.secondary} />
-            <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>Analyse IA instantanee</Text>
-              <Text style={styles.featureDescription}>Scanne tes repas et obtiens une analyse complete</Text>
+          <Text style={[styles.cardTitle, { color: COLORS.textPrimary }]}>{t('about.featuresTitle')}</Text>
+          {features.map((feature, i) => (
+            <View key={i} style={[styles.featureRow, { borderBottomColor: COLORS.border }]}>
+              <Ionicons name={feature.icon as any} size={24} color={COLORS.secondary} />
+              <View style={styles.featureText}>
+                <Text style={[styles.featureTitle, { color: COLORS.textPrimary }]}>{feature.title}</Text>
+                <Text style={[styles.featureDescription, { color: COLORS.textSecondary }]}>{feature.desc}</Text>
+              </View>
             </View>
-          </View>
-
-          <View style={styles.featureRow}>
-            <Ionicons name="trophy" size={24} color={COLORS.secondary} />
-            <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>Gamification</Text>
-              <Text style={styles.featureDescription}>Gagne des badges et reste motive</Text>
-            </View>
-          </View>
-
-          <View style={styles.featureRow}>
-            <Ionicons name="chatbubbles" size={24} color={COLORS.secondary} />
-            <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>Coach IA</Text>
-              <Text style={styles.featureDescription}>Des conseils personnalises 24/7</Text>
-            </View>
-          </View>
+          ))}
         </Card>
 
-        {/* Links */}
         <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Informations legales</Text>
-          
-          <TouchableOpacity 
-            style={styles.linkRow}
-            onPress={showPrivacyPolicy}
-          >
+          <Text style={[styles.cardTitle, { color: COLORS.textPrimary }]}>{t('about.legalTitle')}</Text>
+
+          <TouchableOpacity style={[styles.linkRow, { borderBottomColor: COLORS.border }]} onPress={showPrivacyPolicy}>
             <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.textSecondary} />
-            <Text style={styles.linkText}>Politique de confidentialite</Text>
+            <Text style={[styles.linkText, { color: COLORS.textPrimary }]}>{t('about.privacyPolicy')}</Text>
             <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.linkRow}
-            onPress={showTermsOfService}
-          >
+          <TouchableOpacity style={[styles.linkRow, { borderBottomColor: COLORS.border }]} onPress={showTermsOfService}>
             <Ionicons name="document-text-outline" size={20} color={COLORS.textSecondary} />
-            <Text style={styles.linkText}>Conditions d'utilisation</Text>
+            <Text style={[styles.linkText, { color: COLORS.textPrimary }]}>{t('about.termsOfService')}</Text>
             <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.linkRow, { borderBottomWidth: 0 }]}
-            onPress={showWebsite}
-          >
+          <TouchableOpacity style={[styles.linkRow, { borderBottomWidth: 0 }]} onPress={showWebsite}>
             <Ionicons name="globe-outline" size={20} color={COLORS.textSecondary} />
-            <Text style={styles.linkText}>Site web</Text>
+            <Text style={[styles.linkText, { color: COLORS.textPrimary }]}>{t('about.website')}</Text>
             <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
           </TouchableOpacity>
         </Card>
 
-        {/* Footer */}
-        <Text style={styles.footer}>
-          Fait avec amour en Suisse
-        </Text>
-        <Text style={styles.copyright}>
-          2025 NutriSnap. Tous droits reserves.
-        </Text>
+        <Text style={[styles.footer, { color: COLORS.textSecondary }]}>{t('about.footer')}</Text>
+        <Text style={[styles.copyright, { color: COLORS.textLight }]}>{t('about.copyright')}</Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -164,99 +112,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.textPrimary,
-  },
-  scrollContent: {
-    padding: SPACING.md,
-    paddingBottom: SPACING.xxl,
-  },
-  logoSection: {
-    alignItems: 'center',
-    marginBottom: SPACING.lg,
-  },
-  appName: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.secondary,
-    marginTop: SPACING.md,
-  },
-  appTagline: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
-  },
-  version: {
-    fontSize: 14,
-    color: COLORS.textLight,
-    marginTop: SPACING.xs,
-  },
-  card: {
-    marginBottom: SPACING.md,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    marginBottom: SPACING.md,
-  },
-  cardText: {
-    fontSize: 15,
-    color: COLORS.textSecondary,
-    lineHeight: 24,
-  },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  featureText: {
-    marginLeft: SPACING.md,
-    flex: 1,
-  },
-  featureTitle: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: COLORS.textPrimary,
-  },
-  featureDescription: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  linkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  linkText: {
-    flex: 1,
-    fontSize: 15,
-    color: COLORS.textPrimary,
-    marginLeft: SPACING.sm,
-  },
-  footer: {
-    textAlign: 'center',
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.lg,
-  },
-  copyright: {
-    textAlign: 'center',
-    fontSize: 12,
-    color: COLORS.textLight,
-    marginTop: SPACING.xs,
-  },
+  backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  title: { fontSize: 20, fontWeight: 'bold' },
+  scrollContent: { padding: SPACING.md, paddingBottom: SPACING.xxl },
+  logoSection: { alignItems: 'center', marginBottom: SPACING.lg },
+  appName: { fontSize: 28, fontWeight: 'bold', marginTop: SPACING.md },
+  appTagline: { fontSize: 16, marginTop: SPACING.xs },
+  version: { fontSize: 14, marginTop: SPACING.xs },
+  card: { marginBottom: SPACING.md },
+  cardTitle: { fontSize: 16, fontWeight: '600', marginBottom: SPACING.md },
+  cardText: { fontSize: 15, lineHeight: 24 },
+  featureRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: SPACING.sm, borderBottomWidth: 1 },
+  featureText: { marginLeft: SPACING.md, flex: 1 },
+  featureTitle: { fontSize: 15, fontWeight: '500' },
+  featureDescription: { fontSize: 13, marginTop: 2 },
+  linkRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: SPACING.md, borderBottomWidth: 1 },
+  linkText: { flex: 1, fontSize: 15, marginLeft: SPACING.sm },
+  footer: { textAlign: 'center', fontSize: 14, marginTop: SPACING.lg },
+  copyright: { textAlign: 'center', fontSize: 12, marginTop: SPACING.xs },
 });

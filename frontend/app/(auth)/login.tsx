@@ -8,54 +8,103 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../src/constants/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
+import { SPACING, BORDER_RADIUS } from '../../src/constants/colors';
+import { useColors } from '../../src/hooks/useColors';
 import { supabase } from '../../src/lib/supabase';
-import { Button, MascotAnimated } from '../../src/components';
-import i18n from '../../src/i18n';
+import { useTranslation } from '../../src/hooks/useTranslation';
+import { GoogleLogo } from '../../src/components';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const router = useRouter();
+  const COLORS = useColors();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<'google' | 'apple' | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const t = i18n.t.bind(i18n);
+  const [error, setError] = useState('');
+  const t = useTranslation();
+
+  const redirectTo = makeRedirectUri({ scheme: 'nutrisnap', path: '/' });
 
   const handleLogin = async () => {
+    setError('');
     if (!email || !password) {
-      Alert.alert(t('common.error'), 'Veuillez remplir tous les champs');
+      setError(t('auth.fillAllFields'));
       return;
     }
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
       });
 
-      if (error) {
-        Alert.alert(t('common.error'), t('auth.loginError'));
-        console.error('Login error:', error);
-      } else if (data.session) {
-        // Navigation will be handled by _layout.tsx auth listener
-        console.log('Login successful');
+      if (signInError) {
+        setError(t('auth.loginError'));
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      Alert.alert(t('common.error'), t('errors.generic'));
+    } catch {
+      setError(t('errors.generic'));
     } finally {
       setLoading(false);
     }
   };
 
+  const handleOAuth = async (provider: 'google' | 'apple') => {
+    setError('');
+    setOauthLoading(provider);
+    try {
+      if (Platform.OS === 'web') {
+        const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+          provider,
+          options: {
+            redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+            skipBrowserRedirect: true,
+          },
+        });
+        console.log('[OAuth] URL générée:', data?.url);
+        console.log('[OAuth] Erreur:', oauthError);
+        if (oauthError || !data?.url) { setError(t('errors.generic')); return; }
+        window.location.href = data.url;
+        return;
+      }
+
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo, skipBrowserRedirect: true },
+      });
+
+      if (oauthError || !data?.url) {
+        setError(t('errors.generic'));
+        return;
+      }
+
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+
+      if (result.type === 'success' && result.url) {
+        const code = new URL(result.url).searchParams.get('code');
+        if (code) await supabase.auth.exchangeCodeForSession(result.url);
+      }
+    } catch {
+      setError(t('errors.generic'));
+    } finally {
+      setOauthLoading(null);
+    }
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -65,35 +114,94 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {/* Back button */}
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={22} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+
+          {/* Header */}
           <View style={styles.header}>
-            <MascotAnimated mood="happy" size={130} />
-            <Text style={styles.title}>{t('auth.welcome')}</Text>
-            <Text style={styles.subtitle}>{t('auth.subtitle')}</Text>
+            <LinearGradient
+              colors={[COLORS.secondary, COLORS.secondary + 'BB']}
+              style={styles.logoCircle}
+            >
+              <Text style={styles.logoEmoji}>🥗</Text>
+            </LinearGradient>
+            <Text style={[styles.title, { color: COLORS.textPrimary }]}>{t('auth.welcome')}</Text>
+            <Text style={[styles.subtitle, { color: COLORS.textSecondary }]}>{t('auth.subtitle')}</Text>
           </View>
 
+          {/* Social buttons */}
+          <View style={styles.socialRow}>
+            <TouchableOpacity
+              style={[styles.googleBtn]}
+              onPress={() => handleOAuth('google')}
+              disabled={!!oauthLoading}
+              activeOpacity={0.85}
+            >
+              {oauthLoading === 'google' ? (
+                <ActivityIndicator size="small" color="#3c4043" />
+              ) : (
+                <GoogleLogo size={20} />
+              )}
+              <Text style={styles.googleBtnText}>{t('auth.google')}</Text>
+            </TouchableOpacity>
+
+            {Platform.OS === 'ios' && (
+              <TouchableOpacity
+                style={[styles.socialBtn, { backgroundColor: COLORS.cardBackground, borderColor: COLORS.border }]}
+                onPress={() => handleOAuth('apple')}
+                disabled={!!oauthLoading}
+              >
+                {oauthLoading === 'apple' ? (
+                  <ActivityIndicator size="small" color={COLORS.textPrimary} />
+                ) : (
+                  <Ionicons name="logo-apple" size={20} color={COLORS.textPrimary} />
+                )}
+                <Text style={[styles.socialBtnText, { color: COLORS.textPrimary }]}>{t('auth.apple')}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Divider */}
+          <View style={styles.divider}>
+            <View style={[styles.dividerLine, { backgroundColor: COLORS.border }]} />
+            <Text style={[styles.dividerText, { color: COLORS.textSecondary }]}>{t('auth.orContinueWith')}</Text>
+            <View style={[styles.dividerLine, { backgroundColor: COLORS.border }]} />
+          </View>
+
+          {/* Form */}
           <View style={styles.form}>
-            <View style={styles.inputContainer}>
+            {/* Error message */}
+            {!!error && (
+              <View style={[styles.errorBox, { backgroundColor: COLORS.error + '18', borderColor: COLORS.error + '40' }]}>
+                <Ionicons name="alert-circle-outline" size={16} color={COLORS.error} />
+                <Text style={[styles.errorText, { color: COLORS.error }]}>{error}</Text>
+              </View>
+            )}
+
+            <View style={[styles.inputContainer, { backgroundColor: COLORS.cardBackground, borderColor: COLORS.border }]}>
               <Ionicons name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: COLORS.textPrimary }]}
                 placeholder={t('auth.email')}
                 placeholderTextColor={COLORS.textLight}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(v) => { setEmail(v); setError(''); }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
               />
             </View>
 
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, { backgroundColor: COLORS.cardBackground, borderColor: COLORS.border }]}>
               <Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: COLORS.textPrimary }]}
                 placeholder={t('auth.password')}
                 placeholderTextColor={COLORS.textLight}
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(v) => { setPassword(v); setError(''); }}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
               />
@@ -107,42 +215,39 @@ export default function LoginScreen() {
             </View>
 
             <TouchableOpacity style={styles.forgotPassword} onPress={() => router.push('/(auth)/forgot-password')}>
-              <Text style={styles.forgotPasswordText}>{t('auth.forgotPassword')}</Text>
+              <Text style={[styles.forgotPasswordText, { color: COLORS.secondary }]}>{t('auth.forgotPassword')}</Text>
             </TouchableOpacity>
 
-            <Button
-              title={t('auth.login')}
+            {/* Login button */}
+            <TouchableOpacity
               onPress={handleLogin}
-              loading={loading}
-              style={styles.loginButton}
-            />
-
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>{t('auth.orContinueWith')}</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <View style={styles.socialButtons}>
-              <TouchableOpacity style={styles.socialButton}>
-                <Ionicons name="logo-google" size={24} color={COLORS.textPrimary} />
-                <Text style={styles.socialButtonText}>{t('auth.google')}</Text>
-              </TouchableOpacity>
-
-              {Platform.OS === 'ios' && (
-                <TouchableOpacity style={styles.socialButton}>
-                  <Ionicons name="logo-apple" size={24} color={COLORS.textPrimary} />
-                  <Text style={styles.socialButtonText}>{t('auth.apple')}</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              <LinearGradient
+                colors={[COLORS.secondary, COLORS.secondary + 'CC']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.loginButton}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Text style={styles.loginButtonText}>{t('auth.login')}</Text>
+                    <Ionicons name="arrow-forward" size={20} color="#fff" />
+                  </>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
 
+          {/* Footer */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>{t('auth.noAccount')} </Text>
+            <Text style={[styles.footerText, { color: COLORS.textSecondary }]}>{t('auth.noAccount')} </Text>
             <Link href="/(auth)/register" asChild>
               <TouchableOpacity>
-                <Text style={styles.footerLink}>{t('auth.register')}</Text>
+                <Text style={[styles.footerLink, { color: COLORS.secondary }]}>{t('auth.register')}</Text>
               </TouchableOpacity>
             </Link>
           </View>
@@ -155,7 +260,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   keyboardView: {
     flex: 1,
@@ -163,35 +267,124 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.xl,
+    paddingTop: SPACING.sm,
     paddingBottom: SPACING.xxl,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    marginBottom: SPACING.sm,
   },
   header: {
     alignItems: 'center',
     marginBottom: SPACING.xl,
   },
+  logoCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+    ...Platform.select({
+      web: { boxShadow: '0px 4px 10px rgba(0,0,0,0.15)' },
+      default: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 10, elevation: 6 },
+    }),
+  },
+  logoEmoji: {
+    fontSize: 34,
+  },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.textPrimary,
-    marginTop: SPACING.md,
+    fontSize: 26,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
+    fontSize: 15,
+    textAlign: 'center',
+  },
+  socialRow: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginBottom: SPACING.lg,
+  },
+  googleBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: '#dadce0',
+    backgroundColor: '#ffffff',
+    gap: SPACING.xs,
+    ...Platform.select({
+      web: { boxShadow: '0px 1px 3px rgba(0,0,0,0.12)' } as any,
+      default: {
+        shadowColor: '#000',
+        shadowOpacity: 0.08,
+        shadowOffset: { width: 0, height: 1 },
+        shadowRadius: 3,
+        elevation: 2,
+      },
+    }),
+  },
+  googleBtnText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#3c4043',
+  },
+  socialBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    gap: SPACING.xs,
+  },
+  socialBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    marginHorizontal: SPACING.md,
+    fontSize: 13,
   },
   form: {
+    gap: SPACING.sm,
+  },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    padding: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    borderWidth: 1,
+  },
+  errorText: {
+    fontSize: 13,
     flex: 1,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.cardBackground,
     borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.md,
     paddingHorizontal: SPACING.md,
-    ...SHADOWS.small,
+    borderWidth: 1,
   },
   inputIcon: {
     marginRight: SPACING.sm,
@@ -200,56 +393,32 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 52,
     fontSize: 16,
-    color: COLORS.textPrimary,
   },
   eyeIcon: {
     padding: SPACING.xs,
   },
   forgotPassword: {
     alignSelf: 'flex-end',
-    marginBottom: SPACING.lg,
+    paddingVertical: SPACING.xs,
   },
   forgotPasswordText: {
-    color: COLORS.secondary,
     fontSize: 14,
+    fontWeight: '500',
   },
   loginButton: {
-    marginBottom: SPACING.lg,
-  },
-  divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: SPACING.lg,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: COLORS.border,
-  },
-  dividerText: {
-    marginHorizontal: SPACING.md,
-    color: COLORS.textSecondary,
-    fontSize: 14,
-  },
-  socialButtons: {
-    flexDirection: 'row',
     justifyContent: 'center',
-    gap: SPACING.md,
-  },
-  socialButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.cardBackground,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
+    height: 54,
     borderRadius: BORDER_RADIUS.md,
     gap: SPACING.sm,
-    ...SHADOWS.small,
+    marginTop: SPACING.xs,
   },
-  socialButtonText: {
+  loginButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
-    color: COLORS.textPrimary,
-    fontWeight: '500',
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   footer: {
     flexDirection: 'row',
@@ -257,12 +426,10 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xl,
   },
   footerText: {
-    color: COLORS.textSecondary,
     fontSize: 14,
   },
   footerLink: {
-    color: COLORS.secondary,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

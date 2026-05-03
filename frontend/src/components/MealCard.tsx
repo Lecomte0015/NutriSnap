@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SHADOWS, BORDER_RADIUS, SPACING } from '../constants/colors';
+import { SHADOWS, BORDER_RADIUS, SPACING } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
 import { Meal } from '../types';
 import { format } from 'date-fns';
 import { fr, de, it } from 'date-fns/locale';
@@ -15,6 +16,8 @@ interface MealCardProps {
 }
 
 export const MealCard: React.FC<MealCardProps> = ({ meal, onPress }) => {
+  const COLORS = useColors();
+
   const getScoreColor = (score: number) => {
     if (score >= 8) return COLORS.scoreExcellent;
     if (score >= 6) return COLORS.scoreGood;
@@ -25,44 +28,48 @@ export const MealCard: React.FC<MealCardProps> = ({ meal, onPress }) => {
   const locale = locales[i18n.locale as keyof typeof locales] || fr;
 
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity
+      style={[styles.container, { backgroundColor: COLORS.cardBackground }]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
       {meal.image_base64 ? (
         <Image
           source={{ uri: `data:image/jpeg;base64,${meal.image_base64}` }}
           style={styles.image}
         />
       ) : (
-        <View style={[styles.image, styles.placeholderImage]}>
+        <View style={[styles.image, styles.placeholderImage, { backgroundColor: COLORS.border }]}>
           <Ionicons name="restaurant" size={24} color={COLORS.textLight} />
         </View>
       )}
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.foods} numberOfLines={1}>
+          <Text style={[styles.foods, { color: COLORS.textPrimary }]} numberOfLines={1}>
             {meal.foods?.join(', ') || 'Repas'}
           </Text>
           <View style={[styles.scoreContainer, { backgroundColor: getScoreColor(meal.score) }]}>
             <Text style={styles.score}>{meal.score}/10</Text>
           </View>
         </View>
-        <Text style={styles.time}>
+        <Text style={[styles.time, { color: COLORS.textLight }]}>
           {format(new Date(meal.created_at), 'HH:mm', { locale })}
         </Text>
         <View style={styles.macros}>
-          <Text style={styles.macroText}>
-            <Text style={styles.macroValue}>{meal.calories}</Text> kcal
+          <Text style={[styles.macroText, { color: COLORS.textSecondary }]}>
+            <Text style={[styles.macroValue, { color: COLORS.textPrimary }]}>{meal.calories}</Text> kcal
           </Text>
-          <Text style={styles.macroDivider}>|</Text>
-          <Text style={styles.macroText}>
-            P: <Text style={styles.macroValue}>{meal.protein}g</Text>
+          <Text style={[styles.macroDivider, { color: COLORS.textLight }]}>|</Text>
+          <Text style={[styles.macroText, { color: COLORS.textSecondary }]}>
+            P: <Text style={[styles.macroValue, { color: COLORS.textPrimary }]}>{meal.protein}g</Text>
           </Text>
-          <Text style={styles.macroDivider}>|</Text>
-          <Text style={styles.macroText}>
-            C: <Text style={styles.macroValue}>{meal.carbs}g</Text>
+          <Text style={[styles.macroDivider, { color: COLORS.textLight }]}>|</Text>
+          <Text style={[styles.macroText, { color: COLORS.textSecondary }]}>
+            C: <Text style={[styles.macroValue, { color: COLORS.textPrimary }]}>{meal.carbs}g</Text>
           </Text>
-          <Text style={styles.macroDivider}>|</Text>
-          <Text style={styles.macroText}>
-            F: <Text style={styles.macroValue}>{meal.fat}g</Text>
+          <Text style={[styles.macroDivider, { color: COLORS.textLight }]}>|</Text>
+          <Text style={[styles.macroText, { color: COLORS.textSecondary }]}>
+            F: <Text style={[styles.macroValue, { color: COLORS.textPrimary }]}>{meal.fat}g</Text>
           </Text>
         </View>
       </View>
@@ -73,7 +80,6 @@ export const MealCard: React.FC<MealCardProps> = ({ meal, onPress }) => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: COLORS.cardBackground,
     borderRadius: BORDER_RADIUS.md,
     padding: SPACING.sm,
     marginBottom: SPACING.sm,
@@ -85,7 +91,6 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.sm,
   },
   placeholderImage: {
-    backgroundColor: COLORS.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -102,7 +107,6 @@ const styles = StyleSheet.create({
   foods: {
     fontSize: 15,
     fontWeight: '600',
-    color: COLORS.textPrimary,
     flex: 1,
     marginRight: SPACING.sm,
   },
@@ -114,11 +118,10 @@ const styles = StyleSheet.create({
   score: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.textWhite,
+    color: '#FFFFFF',
   },
   time: {
     fontSize: 12,
-    color: COLORS.textLight,
     marginTop: 2,
   },
   macros: {
@@ -128,15 +131,12 @@ const styles = StyleSheet.create({
   },
   macroText: {
     fontSize: 12,
-    color: COLORS.textSecondary,
   },
   macroValue: {
     fontWeight: '600',
-    color: COLORS.textPrimary,
   },
   macroDivider: {
     fontSize: 12,
-    color: COLORS.textLight,
     marginHorizontal: SPACING.xs,
   },
 });

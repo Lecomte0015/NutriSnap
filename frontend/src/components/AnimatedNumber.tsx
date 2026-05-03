@@ -10,7 +10,8 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { COLORS, SPACING, BORDER_RADIUS } from '../constants/colors';
+import { useStore } from '../store/useStore';
+import { SPACING, BORDER_RADIUS } from '../constants/colors';
 
 interface AnimatedNumberProps {
   value: number;
@@ -28,11 +29,12 @@ export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
   duration = 1000,
   suffix = '',
   prefix = '',
-  color = COLORS.textPrimary,
+  color = '#333333',
   fontSize = 24,
   fontWeight = 'bold',
   delay = 0,
 }) => {
+  const { hapticsEnabled } = useStore();
   const animatedValue = useSharedValue(0);
   const scale = useSharedValue(0.5);
   const [displayValue, setDisplayValue] = React.useState(0);
@@ -56,7 +58,7 @@ export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
       setDisplayValue(Math.round(progress));
       if (progress >= value) {
         clearInterval(interval);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
     }, 16);
 

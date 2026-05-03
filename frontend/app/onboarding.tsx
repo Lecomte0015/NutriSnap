@@ -18,20 +18,24 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/colors';
-import { Button, Mascot } from '../src/components';
+import { SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/colors';
+import { useColors } from '../src/hooks/useColors';
+import { Button, MascotAnimated } from '../src/components';
 import { useStore } from '../src/store/useStore';
 import i18n from '../src/i18n';
+import { useTranslation } from '../src/hooks/useTranslation';
 
 const { width } = Dimensions.get('window');
 
-const STEPS = ['welcome', 'name', 'age', 'weight', 'height', 'goal', 'language'];
+const STEPS = ['welcome', 'name', 'age', 'weight', 'height', 'goal', 'activity', 'language'];
 
 type Goal = 'lose_weight' | 'maintain' | 'gain_muscle';
-type Language = 'fr' | 'de' | 'it';
+type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active';
+type Language = 'fr' | 'en' | 'de' | 'it';
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const COLORS = useColors();
   const { user, setProfile, setOnboardingCompleted, setLanguage } = useStore();
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -42,10 +46,11 @@ export default function OnboardingScreen() {
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
   const [goal, setGoal] = useState<Goal>('maintain');
+  const [activityLevel, setActivityLevel] = useState<ActivityLevel>('moderate');
   const [language, setSelectedLanguage] = useState<Language>('fr');
   
   const progress = useSharedValue(0);
-  const t = i18n.t.bind(i18n);
+  const t = useTranslation();
 
   const progressStyle = useAnimatedStyle(() => ({
     width: `${interpolate(progress.value, [0, 1], [0, 100])}%`,
@@ -96,6 +101,7 @@ export default function OnboardingScreen() {
             weight: parseFloat(weight),
             height: parseFloat(height),
             goal,
+            activity_level: activityLevel,
             language,
           }),
         }
@@ -125,22 +131,22 @@ export default function OnboardingScreen() {
       case 'welcome':
         return (
           <View style={styles.stepContent}>
-            <Mascot mood="excited" size={180} />
-            <Text style={styles.stepTitle}>{t('onboarding.welcome')}</Text>
-            <Text style={styles.stepSubtitle}>{t('onboarding.welcomeSubtitle')}</Text>
+            <MascotAnimated mood="excited" size={180} />
+            <Text style={[styles.stepTitle, { color: COLORS.textPrimary }]}>{t('onboarding.welcome')}</Text>
+            <Text style={[styles.stepSubtitle, { color: COLORS.textSecondary }]}>{t('onboarding.welcomeSubtitle')}</Text>
           </View>
         );
-      
+
       case 'name':
         return (
           <View style={styles.stepContent}>
-            <Mascot mood="happy" size={140} />
-            <Text style={styles.stepTitle}>Comment vous appelez-vous ?</Text>
+            <MascotAnimated mood="happy" size={140} />
+            <Text style={[styles.stepTitle, { color: COLORS.textPrimary }]}>{t('onboardingExtra.nameQuestion')}</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { color: COLORS.textPrimary, borderBottomColor: COLORS.secondary }]}
               value={firstName}
               onChangeText={setFirstName}
-              placeholder="Votre prénom"
+              placeholder={t('onboardingExtra.namePlaceholder')}
               placeholderTextColor={COLORS.textLight}
               autoFocus
               autoCapitalize="words"
@@ -151,59 +157,35 @@ export default function OnboardingScreen() {
       case 'age':
         return (
           <View style={styles.stepContent}>
-            <Mascot mood="happy" size={140} />
-            <Text style={styles.stepTitle}>{t('onboarding.age')}</Text>
+            <MascotAnimated mood="happy" size={140} />
+            <Text style={[styles.stepTitle, { color: COLORS.textPrimary }]}>{t('onboarding.age')}</Text>
             <View style={styles.inputRow}>
-              <TextInput
-                style={styles.numberInput}
-                value={age}
-                onChangeText={setAge}
-                keyboardType="number-pad"
-                placeholder="25"
-                placeholderTextColor={COLORS.textLight}
-                maxLength={3}
-              />
-              <Text style={styles.unitText}>{t('onboarding.ageUnit')}</Text>
+              <TextInput style={[styles.numberInput, { color: COLORS.secondary, borderBottomColor: COLORS.secondary }]} value={age} onChangeText={setAge} keyboardType="number-pad" placeholder="25" placeholderTextColor={COLORS.textLight} maxLength={3} />
+              <Text style={[styles.unitText, { color: COLORS.textSecondary }]}>{t('onboarding.ageUnit')}</Text>
             </View>
           </View>
         );
-        
+
       case 'weight':
         return (
           <View style={styles.stepContent}>
-            <Mascot mood="thinking" size={140} />
-            <Text style={styles.stepTitle}>{t('onboarding.weight')}</Text>
+            <MascotAnimated mood="thinking" size={140} />
+            <Text style={[styles.stepTitle, { color: COLORS.textPrimary }]}>{t('onboarding.weight')}</Text>
             <View style={styles.inputRow}>
-              <TextInput
-                style={styles.numberInput}
-                value={weight}
-                onChangeText={setWeight}
-                keyboardType="decimal-pad"
-                placeholder="70"
-                placeholderTextColor={COLORS.textLight}
-                maxLength={5}
-              />
-              <Text style={styles.unitText}>{t('onboarding.weightUnit')}</Text>
+              <TextInput style={[styles.numberInput, { color: COLORS.secondary, borderBottomColor: COLORS.secondary }]} value={weight} onChangeText={setWeight} keyboardType="decimal-pad" placeholder="70" placeholderTextColor={COLORS.textLight} maxLength={5} />
+              <Text style={[styles.unitText, { color: COLORS.textSecondary }]}>{t('onboarding.weightUnit')}</Text>
             </View>
           </View>
         );
-        
+
       case 'height':
         return (
           <View style={styles.stepContent}>
-            <Mascot mood="idle" size={140} />
-            <Text style={styles.stepTitle}>{t('onboarding.height')}</Text>
+            <MascotAnimated mood="idle" size={140} />
+            <Text style={[styles.stepTitle, { color: COLORS.textPrimary }]}>{t('onboarding.height')}</Text>
             <View style={styles.inputRow}>
-              <TextInput
-                style={styles.numberInput}
-                value={height}
-                onChangeText={setHeight}
-                keyboardType="number-pad"
-                placeholder="175"
-                placeholderTextColor={COLORS.textLight}
-                maxLength={3}
-              />
-              <Text style={styles.unitText}>{t('onboarding.heightUnit')}</Text>
+              <TextInput style={[styles.numberInput, { color: COLORS.secondary, borderBottomColor: COLORS.secondary }]} value={height} onChangeText={setHeight} keyboardType="number-pad" placeholder="175" placeholderTextColor={COLORS.textLight} maxLength={3} />
+              <Text style={[styles.unitText, { color: COLORS.textSecondary }]}>{t('onboarding.heightUnit')}</Text>
             </View>
           </View>
         );
@@ -211,8 +193,8 @@ export default function OnboardingScreen() {
       case 'goal':
         return (
           <View style={styles.stepContent}>
-            <Mascot mood="happy" size={140} />
-            <Text style={styles.stepTitle}>{t('onboarding.goal')}</Text>
+            <MascotAnimated mood="happy" size={140} />
+            <Text style={[styles.stepTitle, { color: COLORS.textPrimary }]}>{t('onboarding.goal')}</Text>
             <View style={styles.optionsContainer}>
               {[
                 { value: 'lose_weight', label: t('onboarding.goalLoseWeight'), icon: 'trending-down' },
@@ -223,21 +205,13 @@ export default function OnboardingScreen() {
                   key={option.value}
                   style={[
                     styles.optionButton,
-                    goal === option.value && styles.optionButtonActive,
+                    { backgroundColor: COLORS.cardBackground },
+                    goal === option.value && { backgroundColor: COLORS.secondary, borderColor: COLORS.secondary },
                   ]}
                   onPress={() => setGoal(option.value as Goal)}
                 >
-                  <Ionicons
-                    name={option.icon as any}
-                    size={24}
-                    color={goal === option.value ? COLORS.textWhite : COLORS.secondary}
-                  />
-                  <Text
-                    style={[
-                      styles.optionText,
-                      goal === option.value && styles.optionTextActive,
-                    ]}
-                  >
+                  <Ionicons name={option.icon as any} size={24} color={goal === option.value ? '#FFFFFF' : COLORS.secondary} />
+                  <Text style={[styles.optionText, { color: COLORS.textPrimary }, goal === option.value && styles.optionTextActive]}>
                     {option.label}
                   </Text>
                 </TouchableOpacity>
@@ -245,15 +219,53 @@ export default function OnboardingScreen() {
             </View>
           </View>
         );
-        
+
+      case 'activity':
+        return (
+          <View style={styles.stepContent}>
+            <MascotAnimated mood="happy" size={140} />
+            <Text style={[styles.stepTitle, { color: COLORS.textPrimary }]}>{t('onboardingExtra.activityLevel')}</Text>
+            <Text style={[styles.stepSubtitle, { color: COLORS.textSecondary }]}>{t('onboardingExtra.activitySubtitle')}</Text>
+            <View style={styles.optionsContainer}>
+              {[
+                { value: 'sedentary', label: t('onboardingExtra.sedentary'), desc: t('onboardingExtra.sedentaryDesc'), icon: '🛋️' },
+                { value: 'light', label: t('onboardingExtra.light'), desc: t('onboardingExtra.lightDesc'), icon: '🚶' },
+                { value: 'moderate', label: t('onboardingExtra.moderate'), desc: t('onboardingExtra.moderateDesc'), icon: '🏃' },
+                { value: 'active', label: t('onboardingExtra.active'), desc: t('onboardingExtra.activeDesc'), icon: '🏋️' },
+              ].map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.optionButton,
+                    { backgroundColor: COLORS.cardBackground },
+                    activityLevel === option.value && { backgroundColor: COLORS.secondary, borderColor: COLORS.secondary },
+                  ]}
+                  onPress={() => setActivityLevel(option.value as ActivityLevel)}
+                >
+                  <Text style={styles.flagText}>{option.icon}</Text>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={[styles.optionText, { color: COLORS.textPrimary }, activityLevel === option.value && styles.optionTextActive]}>
+                      {option.label}
+                    </Text>
+                    <Text style={[{ fontSize: 12, marginTop: 2 }, activityLevel === option.value ? { color: 'rgba(255,255,255,0.8)' } : { color: COLORS.textSecondary }]}>
+                      {option.desc}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        );
+
       case 'language':
         return (
           <View style={styles.stepContent}>
-            <Mascot mood="excited" size={140} />
-            <Text style={styles.stepTitle}>{t('onboarding.language')}</Text>
+            <MascotAnimated mood="excited" size={140} />
+            <Text style={[styles.stepTitle, { color: COLORS.textPrimary }]}>{t('onboarding.language')}</Text>
             <View style={styles.optionsContainer}>
               {[
                 { value: 'fr', label: 'Français', flag: '🇫🇷' },
+                { value: 'en', label: 'English', flag: '🇬🇧' },
                 { value: 'de', label: 'Deutsch', flag: '🇩🇪' },
                 { value: 'it', label: 'Italiano', flag: '🇮🇹' },
               ].map((option) => (
@@ -261,20 +273,13 @@ export default function OnboardingScreen() {
                   key={option.value}
                   style={[
                     styles.optionButton,
-                    language === option.value && styles.optionButtonActive,
+                    { backgroundColor: COLORS.cardBackground },
+                    language === option.value && { backgroundColor: COLORS.secondary, borderColor: COLORS.secondary },
                   ]}
-                  onPress={() => {
-                    setSelectedLanguage(option.value as Language);
-                    i18n.locale = option.value;
-                  }}
+                  onPress={() => { setSelectedLanguage(option.value as Language); i18n.locale = option.value; }}
                 >
                   <Text style={styles.flagText}>{option.flag}</Text>
-                  <Text
-                    style={[
-                      styles.optionText,
-                      language === option.value && styles.optionTextActive,
-                    ]}
-                  >
+                  <Text style={[styles.optionText, { color: COLORS.textPrimary }, language === option.value && styles.optionTextActive]}>
                     {option.label}
                   </Text>
                 </TouchableOpacity>
@@ -299,11 +304,11 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]}>
       {/* Progress bar */}
       <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <Animated.View style={[styles.progressFill, progressStyle]} />
+        <View style={[styles.progressBar, { backgroundColor: COLORS.border }]}>
+          <Animated.View style={[styles.progressFill, progressStyle, { backgroundColor: COLORS.secondary }]} />
         </View>
       </View>
 
@@ -339,7 +344,6 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   progressContainer: {
     paddingHorizontal: SPACING.lg,
@@ -347,13 +351,11 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 4,
-    backgroundColor: COLORS.border,
     borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: COLORS.secondary,
     borderRadius: 2,
   },
   backButton: {
@@ -376,14 +378,12 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
     textAlign: 'center',
     marginTop: SPACING.lg,
     marginBottom: SPACING.sm,
   },
   stepSubtitle: {
     fontSize: 16,
-    color: COLORS.textSecondary,
     textAlign: 'center',
     paddingHorizontal: SPACING.lg,
   },
@@ -395,26 +395,21 @@ const styles = StyleSheet.create({
   numberInput: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: COLORS.secondary,
     textAlign: 'center',
     minWidth: 120,
     borderBottomWidth: 3,
-    borderBottomColor: COLORS.secondary,
     paddingBottom: SPACING.sm,
   },
   unitText: {
     fontSize: 20,
-    color: COLORS.textSecondary,
     marginLeft: SPACING.sm,
   },
   textInput: {
     fontSize: 24,
     fontWeight: '600',
-    color: COLORS.textPrimary,
     textAlign: 'center',
     width: '100%',
     borderBottomWidth: 3,
-    borderBottomColor: COLORS.secondary,
     paddingVertical: SPACING.md,
     marginTop: SPACING.xl,
   },
@@ -426,7 +421,6 @@ const styles = StyleSheet.create({
   optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.cardBackground,
     padding: SPACING.lg,
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 2,
@@ -434,17 +428,15 @@ const styles = StyleSheet.create({
     ...SHADOWS.small,
   },
   optionButtonActive: {
-    backgroundColor: COLORS.secondary,
-    borderColor: COLORS.secondary,
+    borderWidth: 2,
   },
   optionText: {
     fontSize: 16,
     fontWeight: '500',
-    color: COLORS.textPrimary,
     marginLeft: SPACING.md,
   },
   optionTextActive: {
-    color: COLORS.textWhite,
+    color: '#FFFFFF',
   },
   flagText: {
     fontSize: 24,

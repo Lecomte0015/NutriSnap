@@ -6,24 +6,50 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "nutrisnap",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
+      "bundleIdentifier": "com.nutrisnap.app",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSCameraUsageDescription": "Scan meals for nutrition analysis",
-        "NSPhotoLibraryUsageDescription": "Select meal photos to analyze"
+        "NSCameraUsageDescription": "NutriSnap utilise la caméra pour analyser vos repas et calculer les calories.",
+        "NSPhotoLibraryUsageDescription": "NutriSnap accède à vos photos pour analyser les repas sélectionnés.",
+        "NSPhotoLibraryAddUsageDescription": "NutriSnap peut enregistrer des photos de vos repas."
       }
     },
     "android": {
+      "package": "com.nutrisnap.app",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#eaf5f4"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "nutrisnap"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
       ]
     },
     "web": {
@@ -36,7 +62,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/splash-image.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#eaf5f4"
@@ -45,13 +71,21 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "NutriSnap needs camera access to scan your meals"
+          "cameraPermission": "NutriSnap a besoin d'accéder à la caméra pour scanner vos repas."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Select photos to analyze nutrition"
+          "photosPermission": "NutriSnap accède à vos photos pour analyser la valeur nutritionnelle."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#2fa4a7",
+          "sounds": []
         }
       ],
       "expo-localization",
@@ -59,6 +93,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e80637ac-c308-4148-8773-b3ddc61fc92b"
+      }
     }
   }
 }

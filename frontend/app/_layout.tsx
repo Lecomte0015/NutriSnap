@@ -1,19 +1,50 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import * as Notifications from 'expo-notifications';
 import { supabase } from '../src/lib/supabase';
 import { useStore } from '../src/store/useStore';
-import { COLORS } from '../src/constants/colors';
+import { ThemeProvider, useTheme } from '../src/contexts/ThemeContext';
 import i18n from '../src/i18n';
 
 export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <RootLayoutInner />
+    </ThemeProvider>
+  );
+}
+
+function RootLayoutInner() {
   const [isReady, setIsReady] = useState(false);
-  const { user, setUser, setProfile, setOnboardingCompleted, setLoading, setLanguage } = useStore();
+  const { isDark, colors } = useTheme();
+  const { user, setUser, setProfile, setOnboardingCompleted, setLoading, setLanguage, language } = useStore();
   const router = useRouter();
   const segments = useSegments();
+  const notificationListenerRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    notificationListenerRef.current = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const type = response.notification.request.content.data?.type;
+        if (type === 'meal_reminder' || type === 'streak_alert') {
+          router.push('/camera');
+        } else if (type === 'daily_motivation') {
+          router.push('/(tabs)');
+        } else if (type === 'achievement') {
+          router.push('/achievements');
+        }
+      }
+    );
+
+    return () => {
+      notificationListenerRef.current?.remove();
+    };
+  }, []);
 
   useEffect(() => {
     // Check initial auth state
@@ -37,7 +68,7 @@ export default function RootLayout() {
         setProfile(null);
         setOnboardingCompleted(false);
       }
-      
+
       setLoading(false);
     });
 
@@ -78,8 +109,8 @@ export default function RootLayout() {
         setProfile(profile);
         setOnboardingCompleted(true);
         
-        // Set language from profile
-        if (profile.language) {
+        // Use profile language only if no local preference saved yet
+        if (profile.language && !language) {
           i18n.locale = profile.language;
           setLanguage(profile.language);
         }
@@ -97,43 +128,43 @@ export default function RootLayout() {
     if (!isReady) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    const inTabsGroup = segments[0] === '(tabs)';
 
-    if (!user && !inAuthGroup) {
-      // Redirect to welcome if not authenticated
-      router.replace('/(auth)/welcome');
-    } else if (user && inAuthGroup) {
-      // Redirect to main app if authenticated
-      router.replace('/(tabs)');
-    }
+    // Defer navigation to avoid removeChild crash in React concurrent mode
+    const timer = setTimeout(() => {
+      if (!user && !inAuthGroup) {
+        router.replace('/(auth)/welcome');
+      } else if (user && inAuthGroup) {
+        router.replace('/(tabs)');
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [user, segments, isReady]);
-
-  if (!isReady) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.secondary} />
-      </View>
-    );
-  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <StatusBar style="dark" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: COLORS.background },
-          }}
-        >
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-          <Stack.Screen name="camera" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
-          <Stack.Screen name="result" options={{ headerShown: false, presentation: 'modal' }} />
-          <Stack.Screen name="paywall" options={{ headerShown: false, presentation: 'modal' }} />
-        </Stack>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        {!isReady ? (
+          <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+            <ActivityIndicator size="large" color={colors.secondary} />
+          </View>
+        ) : (
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          >
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+            <Stack.Screen name="camera" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+            <Stack.Screen name="result" options={{ headerShown: false, presentation: 'modal' }} />
+            <Stack.Screen name="paywall" options={{ headerShown: false, presentation: 'modal' }} />
+          </Stack>
+        )}
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
@@ -144,6 +175,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
   },
 });

@@ -10,19 +10,21 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/colors';
+import { SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/colors';
+import { useColors } from '../src/hooks/useColors';
 import { Button, Card, Mascot } from '../src/components';
 import { useStore } from '../src/store/useStore';
-import i18n from '../src/i18n';
+import { useTranslation } from '../src/hooks/useTranslation';
 
 type Plan = 'monthly' | 'yearly';
 
 export default function PaywallScreen() {
   const router = useRouter();
+  const COLORS = useColors();
   const { user, subscription, setSubscription, setIsPremium } = useStore();
   const [selectedPlan, setSelectedPlan] = useState<Plan>('yearly');
   const [loading, setLoading] = useState(false);
-  const t = i18n.t.bind(i18n);
+  const t = useTranslation();
 
   const plans = {
     monthly: {
@@ -62,7 +64,7 @@ export default function PaywallScreen() {
         setIsPremium(true);
         Alert.alert(
           t('common.success'),
-          `Vous êtes maintenant abonné à NutriSnap Premium !`,
+          t('subscription.successMsg'),
           [{ text: 'OK', onPress: () => router.back() }]
         );
       } else {
@@ -77,22 +79,18 @@ export default function PaywallScreen() {
   };
 
   const handleRestore = async () => {
-    Alert.alert(
-      t('subscription.restore'),
-      'Cette fonctionnalité sera disponible avec RevenueCat en production.',
-      [{ text: 'OK' }]
-    );
+    Alert.alert(t('subscription.restore'), t('subscription.restoreNote'), [{ text: 'OK' }]);
   };
 
   const isCurrentlyTrial = subscription?.status === 'trial';
   const trialDaysLeft = subscription?.trial_end_date
     ? Math.max(0, Math.ceil((new Date(subscription.trial_end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-    : 14;
+    : 7;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]}>
       {/* Close button */}
-      <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
+      <TouchableOpacity style={[styles.closeButton, { backgroundColor: COLORS.cardBackground }]} onPress={() => router.back()}>
         <Ionicons name="close" size={28} color={COLORS.textPrimary} />
       </TouchableOpacity>
 
@@ -103,12 +101,12 @@ export default function PaywallScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Mascot mood="excited" size={100} />
-          <Text style={styles.title}>{t('subscription.title')}</Text>
+          <Text style={[styles.title, { color: COLORS.textPrimary }]}>{t('subscription.title')}</Text>
           {isCurrentlyTrial && (
-            <View style={styles.trialBadge}>
-              <Ionicons name="time-outline" size={16} color={COLORS.textWhite} />
+            <View style={[styles.trialBadge, { backgroundColor: COLORS.secondary }]}>
+              <Ionicons name="time-outline" size={16} color="#FFFFFF" />
               <Text style={styles.trialText}>
-                {trialDaysLeft} jours restants
+                {t('subscription.trialDaysLeft', { count: trialDaysLeft })}
               </Text>
             </View>
           )}
@@ -117,30 +115,30 @@ export default function PaywallScreen() {
         {/* Features comparison */}
         <Card style={styles.featuresCard}>
           <View style={styles.featureRow}>
-            <Text style={styles.featureLabel}>Analyses par jour</Text>
+            <Text style={[styles.featureLabel, { color: COLORS.textPrimary }]}>{t('subscription.analysesPerDay')}</Text>
             <View style={styles.featureComparison}>
               <View style={styles.freeColumn}>
-                <Text style={styles.columnHeader}>Gratuit</Text>
-                <Text style={styles.featureValueFree}>3</Text>
+                <Text style={[styles.columnHeader, { color: COLORS.textSecondary }]}>{t('subscription.free')}</Text>
+                <Text style={[styles.featureValueFree, { color: COLORS.textPrimary }]}>3</Text>
               </View>
               <View style={styles.premiumColumn}>
-                <Text style={styles.columnHeaderPremium}>Premium</Text>
-                <Text style={styles.featureValuePremium}>Illimité</Text>
+                <Text style={[styles.columnHeaderPremium, { color: COLORS.secondary }]}>Premium</Text>
+                <Text style={[styles.featureValuePremium, { color: COLORS.secondary }]}>{t('subscription.unlimited')}</Text>
               </View>
             </View>
           </View>
 
-          <View style={styles.featureDivider} />
+          <View style={[styles.featureDivider, { backgroundColor: COLORS.border }]} />
 
           {[
-            { label: 'Suivi complet', free: false, premium: true },
-            { label: 'Coaching avancé', free: false, premium: true },
-            { label: 'Historique complet', free: false, premium: true },
-            { label: 'Sans publicité', free: false, premium: true },
+            { label: t('subscription.featureTracking'), free: false, premium: true },
+            { label: t('subscription.featureCoaching'), free: false, premium: true },
+            { label: t('subscription.featureHistory'), free: false, premium: true },
+            { label: t('subscription.featureNoAds'), free: false, premium: true },
           ].map((feature, index) => (
             <View key={index}>
               <View style={styles.featureRowSimple}>
-                <Text style={styles.featureLabel}>{feature.label}</Text>
+                <Text style={[styles.featureLabel, { color: COLORS.textPrimary }]}>{feature.label}</Text>
                 <View style={styles.featureIcons}>
                   <Ionicons
                     name={feature.free ? 'checkmark-circle' : 'close-circle'}
@@ -155,23 +153,24 @@ export default function PaywallScreen() {
                   />
                 </View>
               </View>
-              {index < 3 && <View style={styles.featureDivider} />}
+              {index < 3 && <View style={[styles.featureDivider, { backgroundColor: COLORS.border }]} />}
             </View>
           ))}
         </Card>
 
         {/* Plan selection */}
-        <Text style={styles.selectPlanTitle}>Choisissez votre plan</Text>
+        <Text style={[styles.selectPlanTitle, { color: COLORS.textPrimary }]}>{t('subscription.choosePlan')}</Text>
 
         <TouchableOpacity
           style={[
             styles.planCard,
-            selectedPlan === 'yearly' && styles.planCardSelected,
+            { backgroundColor: COLORS.cardBackground },
+            selectedPlan === 'yearly' && { borderColor: COLORS.secondary },
           ]}
           onPress={() => setSelectedPlan('yearly')}
         >
           {plans.yearly.savings && (
-            <View style={styles.savingsBadge}>
+            <View style={[styles.savingsBadge, { backgroundColor: COLORS.success }]}>
               <Text style={styles.savingsText}>Économisez {plans.yearly.savings}</Text>
             </View>
           )}
@@ -179,16 +178,17 @@ export default function PaywallScreen() {
             <View style={styles.planRadio}>
               <View style={[
                 styles.radioOuter,
-                selectedPlan === 'yearly' && styles.radioOuterSelected,
+                { borderColor: COLORS.border },
+                selectedPlan === 'yearly' && { borderColor: COLORS.secondary },
               ]}>
-                {selectedPlan === 'yearly' && <View style={styles.radioInner} />}
+                {selectedPlan === 'yearly' && <View style={[styles.radioInner, { backgroundColor: COLORS.secondary }]} />}
               </View>
             </View>
             <View style={styles.planInfo}>
-              <Text style={styles.planName}>{t('subscription.yearly')}</Text>
-              <Text style={styles.planPrice}>
+              <Text style={[styles.planName, { color: COLORS.textPrimary }]}>{t('subscription.yearly')}</Text>
+              <Text style={[styles.planPrice, { color: COLORS.secondary }]}>
                 {plans.yearly.price}
-                <Text style={styles.planPeriod}>{plans.yearly.period}</Text>
+                <Text style={[styles.planPeriod, { color: COLORS.textSecondary }]}>{plans.yearly.period}</Text>
               </Text>
             </View>
           </View>
@@ -197,7 +197,8 @@ export default function PaywallScreen() {
         <TouchableOpacity
           style={[
             styles.planCard,
-            selectedPlan === 'monthly' && styles.planCardSelected,
+            { backgroundColor: COLORS.cardBackground },
+            selectedPlan === 'monthly' && { borderColor: COLORS.secondary },
           ]}
           onPress={() => setSelectedPlan('monthly')}
         >
@@ -205,16 +206,17 @@ export default function PaywallScreen() {
             <View style={styles.planRadio}>
               <View style={[
                 styles.radioOuter,
-                selectedPlan === 'monthly' && styles.radioOuterSelected,
+                { borderColor: COLORS.border },
+                selectedPlan === 'monthly' && { borderColor: COLORS.secondary },
               ]}>
-                {selectedPlan === 'monthly' && <View style={styles.radioInner} />}
+                {selectedPlan === 'monthly' && <View style={[styles.radioInner, { backgroundColor: COLORS.secondary }]} />}
               </View>
             </View>
             <View style={styles.planInfo}>
-              <Text style={styles.planName}>{t('subscription.monthly')}</Text>
-              <Text style={styles.planPrice}>
+              <Text style={[styles.planName, { color: COLORS.textPrimary }]}>{t('subscription.monthly')}</Text>
+              <Text style={[styles.planPrice, { color: COLORS.secondary }]}>
                 {plans.monthly.price}
-                <Text style={styles.planPeriod}>{plans.monthly.period}</Text>
+                <Text style={[styles.planPeriod, { color: COLORS.textSecondary }]}>{plans.monthly.period}</Text>
               </Text>
             </View>
           </View>
@@ -230,17 +232,17 @@ export default function PaywallScreen() {
 
         {/* Restore purchases */}
         <TouchableOpacity style={styles.restoreButton} onPress={handleRestore}>
-          <Text style={styles.restoreText}>{t('subscription.restore')}</Text>
+          <Text style={[styles.restoreText, { color: COLORS.secondary }]}>{t('subscription.restore')}</Text>
         </TouchableOpacity>
 
         {/* Legal links */}
         <View style={styles.legalLinks}>
           <TouchableOpacity>
-            <Text style={styles.legalText}>{t('subscription.terms')}</Text>
+            <Text style={[styles.legalText, { color: COLORS.textLight }]}>{t('subscription.terms')}</Text>
           </TouchableOpacity>
-          <Text style={styles.legalDivider}>|</Text>
+          <Text style={[styles.legalDivider, { color: COLORS.textLight }]}>|</Text>
           <TouchableOpacity>
-            <Text style={styles.legalText}>{t('subscription.privacy')}</Text>
+            <Text style={[styles.legalText, { color: COLORS.textLight }]}>{t('subscription.privacy')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -251,7 +253,6 @@ export default function PaywallScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   closeButton: {
     position: 'absolute',
@@ -260,7 +261,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: COLORS.cardBackground,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
@@ -278,20 +278,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
     marginTop: SPACING.md,
   },
   trialBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.secondary,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.round,
     marginTop: SPACING.sm,
   },
   trialText: {
-    color: COLORS.textWhite,
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '500',
     marginLeft: SPACING.xs,
@@ -310,7 +308,6 @@ const styles = StyleSheet.create({
   },
   featureLabel: {
     fontSize: 15,
-    color: COLORS.textPrimary,
   },
   featureComparison: {
     flexDirection: 'row',
@@ -326,24 +323,20 @@ const styles = StyleSheet.create({
   },
   columnHeader: {
     fontSize: 12,
-    color: COLORS.textSecondary,
     marginBottom: SPACING.xs,
   },
   columnHeaderPremium: {
     fontSize: 12,
-    color: COLORS.secondary,
     fontWeight: '600',
     marginBottom: SPACING.xs,
   },
   featureValueFree: {
     fontSize: 18,
     fontWeight: '600',
-    color: COLORS.textPrimary,
   },
   featureValuePremium: {
     fontSize: 18,
     fontWeight: '600',
-    color: COLORS.secondary,
   },
   featureIcons: {
     flexDirection: 'row',
@@ -354,16 +347,13 @@ const styles = StyleSheet.create({
   },
   featureDivider: {
     height: 1,
-    backgroundColor: COLORS.border,
   },
   selectPlanTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: COLORS.textPrimary,
     marginBottom: SPACING.md,
   },
   planCard: {
-    backgroundColor: COLORS.cardBackground,
     borderRadius: BORDER_RADIUS.md,
     padding: SPACING.md,
     marginBottom: SPACING.sm,
@@ -371,20 +361,16 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     ...SHADOWS.small,
   },
-  planCardSelected: {
-    borderColor: COLORS.secondary,
-  },
   savingsBadge: {
     position: 'absolute',
     top: -10,
     right: SPACING.md,
-    backgroundColor: COLORS.success,
     paddingHorizontal: SPACING.sm,
     paddingVertical: 4,
     borderRadius: BORDER_RADIUS.sm,
   },
   savingsText: {
-    color: COLORS.textWhite,
+    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -400,18 +386,13 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: COLORS.border,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  radioOuterSelected: {
-    borderColor: COLORS.secondary,
   },
   radioInner: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: COLORS.secondary,
   },
   planInfo: {
     flex: 1,
@@ -419,18 +400,15 @@ const styles = StyleSheet.create({
   planName: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.textPrimary,
   },
   planPrice: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.secondary,
     marginTop: 4,
   },
   planPeriod: {
     fontSize: 14,
     fontWeight: '400',
-    color: COLORS.textSecondary,
   },
   subscribeButton: {
     marginTop: SPACING.lg,
@@ -440,7 +418,6 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
   },
   restoreText: {
-    color: COLORS.secondary,
     fontSize: 14,
   },
   legalLinks: {
@@ -450,11 +427,9 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
   legalText: {
-    color: COLORS.textLight,
     fontSize: 12,
   },
   legalDivider: {
-    color: COLORS.textLight,
     marginHorizontal: SPACING.sm,
   },
 });
