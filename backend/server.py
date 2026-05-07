@@ -884,7 +884,7 @@ async def coach_message(req: CoachMessage):
         if today_stats:
             today_text = f"\nAujourd'hui: {today_stats.get('total_calories', 0)} kcal / {profile.get('daily_calories', 2000)} kcal cibles. {today_stats.get('meals_count', 0)} repas."
 
-        system_prompt = f"""Tu es le coach nutrition personnel de {profile.get('first_name', 'l\'utilisateur')}.
+        system_prompt = f"""Tu es le coach nutrition personnel de {profile.get('first_name', "l'utilisateur")}.
 Profil: {profile.get('age', '?')} ans, {profile.get('weight', '?')} kg, {profile.get('height', '?')} cm.
 Objectif: {goal_label}. Calories cibles: {profile.get('daily_calories', 2000)} kcal/jour.
 Série actuelle: {current_streak} jours.{today_text}{recent_meals_text}
@@ -1111,4 +1111,5 @@ async def shutdown_event():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    port = int(os.getenv("PORT", 8001))
+    uvicorn.run(app, host="0.0.0.0", port=port)
