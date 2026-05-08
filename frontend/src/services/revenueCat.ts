@@ -7,9 +7,9 @@ import Purchases, {
 import { Platform, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// RevenueCat API Keys - Replace with your actual keys
-const REVENUECAT_API_KEY_IOS = 'sk_ZzZcZxFSbwPmdyzLRvOCHzzCmvKsw';
-const REVENUECAT_API_KEY_ANDROID = 'sk_ZzZcZxFSbwPmdyzLRvOCHzzCmvKsw';
+// RevenueCat API Keys
+const REVENUECAT_API_KEY_IOS = 'sk_ZzZcZxFSbwPmdyzLRvOCHzzCmvKsw'; // À remplacer quand iOS configuré
+const REVENUECAT_API_KEY_ANDROID = 'goog_MwaiEPOGUHTYziJlxnnrMMALIjY';
 
 // Entitlement identifier
 const PREMIUM_ENTITLEMENT = 'NutriSnap';
@@ -120,6 +120,7 @@ class RevenueCatService {
   }
 
   async logOut(): Promise<void> {
+    if (!this.isInitialized) return;
     try {
       await Purchases.logOut();
     } catch (error) {
