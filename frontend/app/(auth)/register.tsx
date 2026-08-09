@@ -104,7 +104,7 @@ export default function RegisterScreen() {
       });
 
       if (signUpError) {
-        setError(t('auth.registerError'));
+        setError(signUpError.message || t('auth.registerError'));
       } else if (data.session) {
         router.replace('/onboarding');
       } else if (data.user) {

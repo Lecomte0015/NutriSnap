@@ -52,7 +52,7 @@ export default function LoginScreen() {
       });
 
       if (signInError) {
-        setError(t('auth.loginError'));
+        setError(signInError.message || t('auth.loginError'));
       }
     } catch {
       setError(t('errors.generic'));
