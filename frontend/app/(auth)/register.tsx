@@ -105,8 +105,10 @@ export default function RegisterScreen() {
 
       if (signUpError) {
         setError(t('auth.registerError'));
-      } else if (data.user) {
+      } else if (data.session) {
         router.replace('/onboarding');
+      } else if (data.user) {
+        setError('Vérifiez votre email et cliquez sur le lien de confirmation pour continuer.');
       }
     } catch {
       setError(t('errors.generic'));

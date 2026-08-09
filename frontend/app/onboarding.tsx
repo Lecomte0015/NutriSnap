@@ -27,7 +27,7 @@ import { useTranslation } from '../src/hooks/useTranslation';
 
 const { width } = Dimensions.get('window');
 
-const STEPS = ['welcome', 'name', 'age', 'weight', 'height', 'goal', 'activity', 'language'];
+const STEPS = ['intro', 'welcome', 'name', 'age', 'weight', 'height', 'goal', 'activity', 'language'];
 
 type Goal = 'lose_weight' | 'maintain' | 'gain_muscle';
 type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active';
@@ -128,6 +128,30 @@ export default function OnboardingScreen() {
 
   const renderStep = () => {
     switch (STEPS[currentStep]) {
+      case 'intro':
+        return (
+          <View style={styles.stepContent}>
+            <MascotAnimated mood="excited" size={140} />
+            <Text style={[styles.stepTitle, { color: COLORS.textPrimary }]}>Bienvenue sur NutriSnap 👋</Text>
+            <Text style={[styles.stepSubtitle, { color: COLORS.textSecondary, marginBottom: 24 }]}>
+              L'app qui analyse vos repas en photo grâce à l'IA
+            </Text>
+            {[
+              { icon: '📸', title: 'Prenez en photo', desc: 'Photographiez votre assiette en 1 seconde' },
+              { icon: '🤖', title: 'L\'IA analyse', desc: 'Calories, protéines, glucides, lipides instantanément' },
+              { icon: '📊', title: 'Suivez vos progrès', desc: 'Historique, objectifs et coach nutrition personnel' },
+            ].map((f, i) => (
+              <View key={i} style={[styles.introCard, { backgroundColor: COLORS.cardBackground, borderColor: COLORS.border }]}>
+                <Text style={styles.introIcon}>{f.icon}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.introCardTitle, { color: COLORS.textPrimary }]}>{f.title}</Text>
+                  <Text style={[styles.introCardDesc, { color: COLORS.textSecondary }]}>{f.desc}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        );
+
       case 'welcome':
         return (
           <View style={styles.stepContent}>
@@ -386,6 +410,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     paddingHorizontal: SPACING.lg,
+  },
+  introCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    marginBottom: SPACING.sm,
+    width: '100%',
+    gap: SPACING.md,
+  },
+  introIcon: {
+    fontSize: 28,
+  },
+  introCardTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  introCardDesc: {
+    fontSize: 13,
   },
   inputRow: {
     flexDirection: 'row',
